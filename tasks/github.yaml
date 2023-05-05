@@ -23,6 +23,9 @@
     - "{{ role_git_conf.github }}"
     - projects
   no_log: true
+  tags:
+    - github
+    - readme
 
 
 - name: Fetch Branches - Github
@@ -51,6 +54,9 @@
   with_items: "{{ github_current_branches.results }}"
   when: item.item.repo is defined and item.json|length == 0 and item.item.item[0].state | default('present') == 'present'
   no_log: true
+  tags:
+    - github
+    - readme
 
 
 - name: Added initial repo files - Github

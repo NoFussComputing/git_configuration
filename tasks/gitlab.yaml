@@ -37,6 +37,9 @@
     - "{{ role_git_conf.gitlab }}"
     - projects
   no_log: true
+  tags:
+    - gitlab
+    - readme
 
 
 - name: Setup temp repo dir - Gitlab
@@ -46,7 +49,9 @@
   with_items: "{{ gitlab_repository.results }}"
   when: item.item[0].state | default('present') == 'present'
   no_log: true
-
+  tags:
+    - gitlab
+    - readme
 
 - name: Download avatar if specified - Gitlab
   ansible.builtin.get_url:

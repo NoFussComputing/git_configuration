@@ -1,0 +1,48 @@
+---
+
+- name: Set fact - manage_readme - Gitlab
+  ansible.builtin.set_fact:
+    temp_var_manage_readme: >-
+     ---
+
+     {% for repository in gitlab_repository.results %}{% if repository.item[1].state|default('present') != 'absent' and repository.item[1].readme.manage | default(false) %}
+
+     - name: {{ repository.item[1].name }}
+       clone_url: "https://oauth2:{{ repository.item[0].api_token }}@{{ repository.project.web_url| replace('https://','') }}.git"
+       id: {{ repository.project.id }}
+       web_url: {{ repository.project.web_url }}
+       provider: gitlab
+       readme:
+        {{ repository.item[1].readme | from_yaml }}
+
+     {% endif %}{% endfor %}{% for repository in github_repository.results %}{% if repository.repo is defined and repository.item[1].readme.manage | default(false) %}
+
+     - name: "{{ repository.item[1].name }}"
+       clone_url: "https://{{ repository.repo.owner.login }}:{{ repository.item[0].api_token }}@{{ repository.repo.clone_url | replace('https://','') }}.git"
+       web_url: {{ repository.repo.html_url }}
+       provider: github
+        readme: 
+          {{ repository.item[1].readme | from_yaml }}
+
+      {% endif %}{% endfor %}
+  no_log: true
+
+- name: Clone Repositories - Readme Management
+  ansible.builtin.git:
+    repo: "{{ item.clone_url }}"
+    dest: "{{ temp_repo_creation_directory }}/{{ item.name | replace(' ', '_') }}/"
+    single_branch: yes
+    version: development
+    depth: 1
+    force: true
+  with_items: "{{ temp_var_manage_readme | from_yaml }}"
+  no_log: true
+
+
+- name: Add Readme
+  ansible.builtin.template:
+    src: README.md.j2
+    dest: "{{ temp_repo_creation_directory }}/{{ item.name | replace(' ', '_') }}/README.md"
+  with_items: "{{ temp_var_manage_readme | from_yaml }}"
+  #when: item.project.empty_repo|default(false) and item.item[0].state | default('present') == 'present'
+  no_log: true

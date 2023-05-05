@@ -1,3 +1,65 @@
-# {{ item.item[1].name | default('') }}{{ item.item.item[1].name | default('')}} Repository.
+<div align="center" width="100%">
 
-This repository was created by ansible!!
+# {{ item.readme.title }}
+
+<br>
+
+![Project Status - Active](https://img.shields.io/badge/Project%20Status-{{ item.readme.status | capitalize }}-{% if item.readme.status| default('active') | lower == 'active'%}green{% else%}yellow{% endif %}?logo={{ item.provider }}&style=plastic) 
+
+<br>
+{% if item.provider | lower == 'gitlab' %}
+
+![Gitlab forks count](https://img.shields.io/badge/dynamic/json?label=Forks&query=%24.forks_count&url=https%3A%2F%2Fgitlab.com%2Fapi%2Fv4%2Fprojects%2F{{ item.id }}%2F&color=ff782e&logo=gitlab&style=plastic) ![Gitlab stars](https://img.shields.io/badge/dynamic/json?label=Stars&query=%24.star_count&url=https%3A%2F%2Fgitlab.com%2Fapi%2Fv4%2Fprojects%2F{{ item.id }}%2F&color=ff782e&logo=gitlab&style=plastic) [![Open Issues](https://img.shields.io/badge/dynamic/json?color=ff782e&logo=gitlab&style=plastic&label=Open%20Issues&query=%24.statistics.counts.opened&url=https%3A%2F%2Fgitlab.com%2Fapi%2Fv4%2Fprojects%2F{{ item.id }}%2Fissues_statistics)]({{ item.web_url }}/-/issues)
+{% endif %}
+
+{% if item.provider|lower == 'github' or item.readme.mirror is defined and item.readme.mirror.provider|lower == 'github' %}
+{%
+    if item.readme.mirror is defined
+%}
+{% set path = item.readme.mirror.path %}
+{% set provider = item.readme.mirror.provider %}
+{% endif %}
+
+![GitHub forks](https://img.shields.io/github/forks/{{ path }}?logo=github&style=plastic&color=000000&labell=Forks) ![GitHub stars](https://img.shields.io/github/stars/{{ path }}?color=000000&logo=github&style=plastic) ![Github Watchers](https://img.shields.io/github/watchers/{{ path }}?color=000000&label=Watchers&logo=github&style=plastic)
+{% endif %}
+<br>
+
+This project is hosted on [{{ item.provider }}]({{ item.web_url }}){% if item.readme.mirror is defined %} and has a read-only copy hosted on [{{ item.readme.mirror.provider | capitalize }}]({{ item.readme.mirror.web_url }}){% endif %}.
+
+{% if item.provider == 'gitlab' %}
+----
+
+**Stable Branch**
+
+![Gitlab build status - stable](https://img.shields.io/badge/dynamic/json?color=ff782e&label=Build&query=0.status&url=https%3A%2F%2Fgitlab.com%2Fapi%2Fv4%2Fprojects%2F{{ item.id }}%2Fpipelines%3Fref%3Dmaster&logo=gitlab&style=plastic) ![branch release version](https://img.shields.io/badge/dynamic/yaml?color=ff782e&logo=gitlab&style=plastic&label=Release&query=%24.commitizen.version&url={{ item.web_url | urlencode }}%2F-%2Fraw%2Fmaster%2F.cz.yaml) 
+
+----
+
+**Development Branch** 
+
+![Gitlab build status - development](https://img.shields.io/badge/dynamic/json?color=ff782e&label=Build&query=0.status&url=https%3A%2F%2Fgitlab.com%2Fapi%2Fv4%2Fprojects%2F{{ item.id }}%2Fpipelines%3Fref%3Ddevelopment&logo=gitlab&style=plastic) ![branch release version](https://img.shields.io/badge/dynamic/yaml?color=ff782e&logo=gitlab&style=plastic&label=Release&query=%24.commitizen.version&url={{ item.web_url | urlencode }}-%2Fraw%2Fdevelopment%2F.cz.yaml)
+
+----
+{% endif %}
+<br>
+
+</div>
+
+links:
+
+- [Issues]({{ item.web_url}}{% if item.provider | lower == 'gitlab' %}/-/issues{% elif item.provider | lower == 'github' %}/issues{% endif %})
+
+- [Merge Requests (Pull Requests)]({{ item.web_url}}{% if item.provider | lower == 'gitlab' %}/-/merge_requests{% elif item.provider | lower == 'github' %}/pulls{% endif %})
+
+
+
+## Contributing
+All contributions for this project must conducted from [{{ item.provider | capitalize }}]({{ item.web_url}}).
+
+For further details on contributing please refer to the [contribution guide](CONTRIBUTING.md).
+
+
+## Other
+
+This repo is release under this [license](LICENSE)
+
