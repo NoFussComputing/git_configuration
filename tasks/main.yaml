@@ -1,0 +1,14 @@
+---
+
+- name: Gitlab configuration
+  ansible.builtin.import_tasks: gitlab.yaml
+  when: role_git_conf.gitlab is defined
+  tags:
+    - gitlab
+
+
+- name: Github configuration
+  ansible.builtin.import_tasks: github.yaml
+  when: role_git_conf.github is defined
+  tags:
+    - github

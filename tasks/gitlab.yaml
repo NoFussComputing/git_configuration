@@ -1,0 +1,312 @@
+---
+
+- name: Install required python packages - Gitlab
+  ansible.builtin.pip:
+    name: "{{ item }}"
+  delegate_to: "localhost"
+  with_items:
+    - python-gitlab
+    - requests
+
+
+- name: Project Creation/Removal - Gitlab
+  community.general.gitlab_project:
+    api_job_token: "{{ item[0].api_job_token | default(omit) }}"
+    api_oauth_token: "{{ item[0].api_oauth_token | default(omit) }}"
+    api_password: "{{ item[0].api_password | default(omit) }}"
+    api_token: "{{ item[0].api_token | default(omit) }}"
+    api_url: "{{ item[0].api_url | default(omit) }}"
+    api_username: "{{ item[0].api_username | default(omit) }}"
+    group: "{{ item[1].group | default(omit) }}"
+    import_url: "{{ item[1].import_url | default(omit) }}"
+    initialize_with_readme: "{{ item[1].initialize_with_readme | default(false) | bool }}"
+    issues_enabled: "{{ item[1].issues_enabled | default(true) | bool }}" # defined as this module sets otherwise
+    lfs_enabled: "{{ item[1].lfs_enabled | default(false) | bool }}" # defined as this module sets otherwise
+    merge_method: "{{ item[1].merge_method | default('merge') }}"  # defined as this module sets otherwise
+    merge_requests_enabled: "{{ item[1].merge_requests_enabled | default(true) | bool }}" # defined as this module sets otherwise
+    name: "{{ item[1].name }}"
+    path: "{{ item[1].path | default(omit) }}"
+    snippets_enabled: "{{ item[1].snippets_enabled | default(false) | bool }}" # defined as this module sets otherwise
+    state: "{{ item[1].state | default('present') }}"
+    username: "{{ item[1].username | default(omit) }}"
+    validate_certs: "{{ item[0].validate_certs | default(true) | bool }}"
+    visibility: "{{ item[1].visibility | default('private') }}"
+  delegate_to: localhost
+  register: gitlab_repository
+  with_subelements:
+    - "{{ role_git_conf.gitlab }}"
+    - projects
+  no_log: true
+
+
+- name: Setup temp repo dir - Gitlab
+  ansible.builtin.file:
+    name: "{{ temp_repo_creation_directory }}/{{ item.item[1].name | replace(' ', '_') }}"
+    state: directory
+  with_items: "{{ gitlab_repository.results }}"
+  when: item.item[0].state | default('present') == 'present'
+  no_log: true
+
+
+- name: Download avatar if specified - Gitlab
+  ansible.builtin.get_url:
+    url: "{{ item.item[1].avatar }}"
+    dest: "{{ temp_repo_creation_directory }}/{{ item.item[1].name | replace(' ', '_') }}.png"
+    mode: '0440'
+  with_items: "{{ gitlab_repository.results }}"
+  register: avatar
+  when: item.item[0].state | default('present') == 'present' and item.item[1].avatar is defined and not item.project.avatar_url|default(false)
+  no_log: true
+
+
+# fails so curl from shell module used.
+# - name: Configure Project Avatar - Gitlab
+#   ansible.builtin.uri:
+#     url: "{{ item.item.project._links.self }}"
+#     method: PUT
+#     body_format: form-multipart #raw #json
+#     status_code: [ 200 ]
+#     return_content: true
+#     headers:
+#       PRIVATE-TOKEN: "{{ item.item.item[0].api_token }}"
+#     body:
+#       avatar:
+#         filename: "{{ temp_repo_creation_directory}}/{{ item.item.item[1].name }}.png"
+#         mime_type: 'image/png'
+#   #delegate_to: localhost
+#   #register: project_configuration
+#   with_items: "{{ avatar.results }}"
+#   when: item.item.item[0].state | default('present') == 'present' and item.item.project is defined and item.item.item[1].avatar is defined
+#   #changed_when: "'Successfully created or updated the project' in project_configuration.msg"
+#   no_log: true
+
+
+- name: Configure Project Avatar - Gitlab
+  ansible.builtin.shell: >-
+    curl --request PUT --header "PRIVATE-TOKEN: {{ item.item.item[0].api_token }}" \
+     --form "avatar=@{{ temp_repo_creation_directory}}/{{ item.item.item[1].name | replace(' ', '_') }}.png" "{{ item.item.project._links.self }}"
+  changed_when: true == false
+  with_items: "{{ avatar.results }}"
+  when: item.item.item[0].state | default('present') == 'present' and item.item.project is defined and item.item.item[1].avatar is defined and not item.skipped|default(false)
+  no_log: true
+
+
+- name: Added initial repo files - Gitlab
+  ansible.builtin.template:
+    src: README.md.j2
+    dest: "{{ temp_repo_creation_directory }}/{{ item.item[1].name | replace(' ', '_') }}/README.md"
+  with_items: "{{ gitlab_repository.results }}"
+  when: item.project.empty_repo|default(false) and item.item[0].state | default('present') == 'present'
+  no_log: true
+
+
+- name: Add licence (init only) - Gitlab
+  ansible.builtin.template:
+    src: LICENCE.j2
+    dest: "{{ temp_repo_creation_directory }}/{{ item.item[1].name | replace(' ', '_') }}/LICENSE"
+  with_items: "{{ gitlab_repository.results }}"
+  when: item.project.empty_repo|default(false) and item.item[0].state | default('present') == 'present'
+  no_log: true
+
+
+- name: Create Branch structure (master->development) [empty repo only] - Gitlab
+  ansible.builtin.shell: >-
+    export current_path=${PWD};
+    mkdir -p {{ temp_repo_creation_directory }}/{{ item.item[1].name | replace(' ', '_') }};
+    cd {{ temp_repo_creation_directory }}/{{ item.item[1].name | replace(' ', '_') }};
+    git init -b master;
+    git add .;
+    export GIT_AUTHOR_NAME=nfc_bot;
+    export GIT_AUTHOR_EMAIL=helpdesk@nofusscomputing.com;
+    export GIT_COMMITTER_NAME=nfc_bot;
+    export GIT_COMMITTER_EMAIL=helpdesk@nofusscomputing.com;
+    git commit -m "chore{{':'}} repo creation
+
+
+    Created with ansible
+
+
+    MR !1";
+    git remote add origin "https://oauth2:{{ item.item[0].api_token }}@{{ item.project.web_url| replace('https://','') }}.git";
+    git push origin master;
+    git checkout -b development master;
+    git push origin development;
+    cd ${current_path};
+    rm -Rf {{ temp_repo_creation_directory }}/{{ item.item[1].name | replace(' ', '_') }}
+  args:
+    executable: bash
+  delegate_to: localhost
+  connection: local
+  changed_when: true == false
+  with_items: "{{ gitlab_repository.results }}"
+  when: item.project.empty_repo|default(false) and item.item[0].state | default('present') == 'present'
+  no_log: true
+
+
+# {% if item.item[1].avatar is defined %}"avatar": "{{ temp_repo_creation_directory}}/{{ item.item[1].name }}.png",{% endif %}
+- name: Project Configuration - Gitlab
+  ansible.builtin.uri:
+    url: "{{ item.project._links.self }}"
+    method: PUT
+    body_format: json
+    status_code: [200]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ item.item[0].api_token }}"
+    body: >-
+      {
+        "container_registry_access_level": "{{ item.item[1].container_registry_access_level | default('disabled') }}",
+        "default_branch": "{{ item.item[1].default_branch | default('development') }}",
+        "allow_merge_on_skipped_pipeline": {{ item.item[1].allow_merge_on_skipped_pipeline | default(false) | bool}},
+        "analytics_access_level": "{{ item.item[1].analytics_access_level | default('disabled') }}",
+        "archived": {{ item.item[1].archived | default(false | bool )}},
+        "builds_access_level": "{{ item.item[1].builds_access_level | default('private')}}",
+        "description": "{{ item.item[1].description | default(omit) }}",
+        "environments_access_level": "{{ item.item[1].environments_access_level | default('disabled') }}",
+        "feature_flags_access_level": "{{ item.item[1].feature_flags_access_level | default('disabled') }}",
+        "forking_access_level": "{{ item.item[1].forking_access_level | default('private') }}",
+        "infrastructure_access_level": "{{ item.item[1].infrastructure_access_level | default('disabled') }}",
+        "issues_enabled": "{{ item.item[1].issues_enabled | default(true) | bool }}",
+        "lfs_enabled": "{{ item.item[1].lfs_enabled | default(false) | bool }}",
+        "merge_method": "{{ item.item[1].merge_method | default('merge') }}",
+        "merge_requests_enabled": "{{ item.item[1].merge_requests_enabled | default(true) | bool }}",
+        "monitor_access_level": "{{ item.item[1].monitor_access_level | default('disabled') }}",
+        "only_allow_merge_if_all_discussions_are_resolved": "{{ item.item[1].only_allow_merge_if_all_discussions_are_resolved | default(true) | bool }}",
+        "only_allow_merge_if_pipeline_succeeds": "{{ item.item[1].only_allow_merge_if_pipeline_succeeds | default(true) | bool }}",
+        "packages_enabled": "{{ item.item[1].opackages_enabled | default(false) | bool }}",
+        "releases_access_level": "{{ item.item[1].releases_access_level | default('disabled') }}",
+        "remove_source_branch_after_merge": {{ item.item[1].remove_source_branch_after_merge | default(true) | bool }},
+        "security_and_compliance_access_level": "{{ item.item[1].security_and_compliance_access_level | default('disabled') }}",
+        "shared_runners_enabled": {{ item.item[1].shared_runners_enabled | default(true) | bool }},
+        "snippets_enabled": {{ item.item[1].snippets_enabled | default(false) | bool }},
+        "squash_option": "{{ item.item[1].squash_option | default('default_off') }}",
+
+        {% if item.item[1].topics is defined and item.item[1].topics|length > 0 %}"topics": {{ item.item[1].topics | from_yaml_all }},{% endif %}
+
+        "visibility": "{{ item.item[1].visibility | default('private') }}",
+        "wiki_enabled": {{ item.item[1].wiki_enabled | default(false) | bool }}
+      }
+  delegate_to: localhost
+  register: project_configuration
+  with_items: "{{ gitlab_repository.results }}"
+  when: item.item[0].state | default('present') == 'present' and item.project is defined
+  changed_when: "'Successfully created or updated the project' in project_configuration.msg"
+  no_log: true
+
+
+- name: Set fact - branches - Gitlab
+  ansible.builtin.set_fact:
+    tmp_var_gitlab_branches: >-
+     ---
+
+     {% for repository in gitlab_repository.results %}{% if repository.item[1].branches is defined and repository.item[1].state|default('present') != 'absent' %}{% for branch in repository.item[1].branches %}
+
+
+     - name: {{ branch.name }}
+
+       project_api_url: {{ repository.project._links.self }}
+
+       path: {{ repository.project.path_with_namespace }}
+
+       default: {% if branch.name == repository.item[1].default_branch | default('development') %}true{% else %}false{% endif %}
+
+       create: {% for existing_branch in lookup('ansible.builtin.url', repository.project._links.repo_branches, headers={'PRIVATE-TOKEN': repository.item[0].api_token} ) | from_yaml %}{%if existing_branch.name == branch.name %}false{% endif %}{% endfor %}
+
+       {% if repository.item[0].api_job_token is defined %}api_job_token: {{ repository.item[0].api_job_token }}{% endif %}
+
+       {% if repository.item[0].api_oauth_token is defined %}api_oauth_token: {{ repository.item[0].api_oauth_token }}{% endif %}
+
+       {% if repository.item[0].api_password is defined %}api_password: {{ repository.item[0].api_password }}{% endif %}
+
+       {% if repository.item[0].api_token is defined %}api_token: {{ repository.item[0].api_token }}{% endif %}
+
+       {% if repository.item[0].api_url is defined %}api_url: {{ repository.item[0].api_url }}{% endif %}
+
+       {% if repository.item[0].api_username is defined %}api_username: {{ repository.item[0].api_username }}{% endif %}
+
+       {% if branch.merge_access_levels is defined %}merge_access_levels: {{ branch.merge_access_levels }}{% endif %}
+
+       {% if branch.push_access_level is defined %}push_access_level: {{ branch.push_access_level }}{% endif %}
+
+       {% if branch.state is defined %}state: {{ branch.state }}{% endif %}
+
+       {% if repository.item[0].validate_certs is defined %}validate_certs: {{ repository.item[0].validate_certs }}{% endif %}
+
+       {% if repository.item[0].validate_certs is defined %}ref_branch: {{ branch.ref_branch | default('master') }}{% endif %}
+
+       url: {{ repository.project.web_url }}
+
+
+
+     {% endfor %}{% endif %}{% endfor %}
+  no_log: true
+
+
+- name: Create/Remove branches - Gitlab
+  community.general.gitlab_branch:
+    api_job_token: "{{ item.api_job_token | default(omit) }}"
+    api_oauth_token: "{{ item.api_oauth_token | default(omit) }}"
+    api_password: "{{ item.api_password | default(omit) }}"
+    api_token: "{{ item.api_token | default(omit) }}"
+    api_url: "{{ item.api_url | default(omit) }}"
+    api_username: "{{ item.api_username | default(omit) }}"
+    branch: "{{ item.name }}"
+    project: "{{ item.path }}"
+    ref_branch: "{{ item.ref_branch | default('master') }}"
+    state: "{{ item.state | default('present') }}"
+  with_items: "{{ tmp_var_gitlab_branches | from_yaml }}"
+  when: item.name is defined and (tmp_var_gitlab_branches is defined and tmp_var_gitlab_branches|length > 0 and item.name != 'master' and ((item.create is defined and item.create != false) or item.state | default('') == 'absent' ))
+  no_log: true
+
+
+- name: Configure protected branches - Gitlab
+  community.general.gitlab_protected_branch:
+    api_job_token: "{{ item.api_job_token | default(omit) }}"
+    api_oauth_token: "{{ item.api_oauth_token | default(omit) }}"
+    api_password: "{{ item.api_password | default(omit) }}"
+    api_token: "{{ item.api_token | default(omit) }}"
+    api_url: "{{ item.api_url | default(omit) }}"
+    api_username: "{{ item.api_username | default(omit) }}"
+    project: "{{ item.path }}"
+    name: "{{ item.name }}"
+    merge_access_levels: "{{ item.merge_access_levels | default('nobody') }}"
+    push_access_level: "{{ item.push_access_level | default('nobody') }}"
+    state: "{{ item.state | default('present') }}"
+    validate_certs: "{{ item.validate_certs | default(true) | bool }}"
+  with_items: "{{ tmp_var_gitlab_branches | from_yaml }}"
+  when: item.name is defined and (tmp_var_gitlab_branches is defined and tmp_var_gitlab_branches|length > 0)
+  no_log: true
+
+
+- name: Setfact repo access - Gitlab
+  ansible.builtin.set_fact:
+    tmp_var_gitlab_repo_access: >-
+      ---
+
+      {% for repository in gitlab_repository.results %}{% if repository.item[1].users is defined %}{% for user in repository.item[1].users %}
+
+      - name: "{{ user.name }}"
+        state: "{{ user.state | default('present') }}"
+        api_token: "{{ repository.item[0].api_token }}"
+        permission: {{ user.permission | default('guest') }}
+        api_url: "{{ repository.item[0].api_url }}"
+        project: "{{ repository.project.path_with_namespace }}"
+
+      {% endfor %}{% endif %}{% endfor %}
+  no_log: true
+
+
+- name: Repository Access - Gitlab
+  community.general.gitlab_project_members:
+    api_url: "{{ item.api_url }}"
+    api_token: "{{ item.api_token }}"
+    # validate_certs: true
+    project: "{{ item.project }}"
+    gitlab_user: "{{ item.name }}"
+    access_level: "{{ item.permission | default('guest') }}"
+    state: "{{ item.state | default('present') }}"
+    validate_certs: "{{ item.item[0].validate_certs | default(true) | bool }}"
+  delegate_to: localhost
+  with_items: "{{ tmp_var_gitlab_repo_access | from_yaml }}"
+  when: item.name is defined and item.state | default('present') == 'present'
+  no_log: true
