@@ -123,8 +123,6 @@
 
         "description": "{{ item.item.item[1].description | default('') }}",
 
-        {% if item.item[1].visibility | default('private') != item.item.repo.visibility %}"visibility": "{{ item.item.item[1].visibility | default('private') }}",{% endif %}
-
         {% if item.json|length > 0 %}"default_branch": "{{ item.item.item[1].default_branch | default('development') }}",{% endif %}
 
         "has_issues": {{ item.item.item[1].has_issues | default(false) | bool }},
