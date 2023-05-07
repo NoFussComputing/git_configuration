@@ -14,7 +14,7 @@
     api_job_token: "{{ item[0].api_job_token | default(omit) }}"
     api_oauth_token: "{{ item[0].api_oauth_token | default(omit) }}"
     api_password: "{{ item[0].api_password | default(omit) }}"
-    api_token: "{{ item[0].api_token | default(omit) }}"
+    api_token: "{{ item[0].api_token_owner | default(omit) }}"
     api_url: "{{ item[0].api_url | default(omit) }}"
     api_username: "{{ item[0].api_username | default(omit) }}"
     group: "{{ item[1].group | default(omit) }}"
@@ -157,7 +157,7 @@
     status_code: [200]
     return_content: true
     headers:
-      PRIVATE-TOKEN: "{{ item.item[0].api_token }}"
+      PRIVATE-TOKEN: "{{ item.item[0].api_token_owner }}"
     body: >-
       {
         "container_registry_access_level": "{{ item.item[1].container_registry_access_level | default('disabled') }}",
