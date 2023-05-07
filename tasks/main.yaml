@@ -16,6 +16,5 @@
 
 - name: Update Repository README.md
   ansible.builtin.import_tasks: readme.yaml
-  #when: temp_var_manage_readme | default([]) | length > 0
   tags:
     - readme

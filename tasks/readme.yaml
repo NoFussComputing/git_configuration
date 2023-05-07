@@ -5,7 +5,7 @@
     url: "{{ item.project._links.merge_requests }}?source_branch={{ item.item[1].readme.branch | default('ansible-git-config') | urlencode }}&state=opened" # https://gitlab.com/api/v4/projects/45761768/merge_requests?source_branch=ansible-git-config
     method: GET
     body_format: json
-    status_code: [200,201]
+    status_code: [200, 201]
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ item.item[0].api_token }}"
@@ -13,23 +13,13 @@
       {
         "id": "{{ item.project.id }}"
       }
-    #     "source_branch": "{{item.readme.branch | default('ansible-git-config') }}",
-    #     "target_branch": "development",
-    #     "title": "chore: Ansible Automated updates",
-    #     "description": "Ansible managed update."
-    #   }
   with_items: "{{ gitlab_repository.results | from_yaml }}"
   when: item.item[1].readme.merge_request | default(true) and item.item[1].readme is defined
   register: current_merge_requests
+  no_log: true
 
-
-# - name: debug
-#   ansible.builtin.debug:
-#     var: item.json
-#   with_items: "{{current_merge_requests.results |from_yaml}}"
 
 - name: Set fact - manage_readme - Gitlab
-  #ansible.builtin.set_fact:
   ansible.builtin.shell: >
     echo $(echo `cat <<EOF
 
@@ -74,18 +64,19 @@
     ]
 
     EOF`);
-    
+
   args:
     executable: bash
-  #no_log: true
+  no_log: true
   register: temp_var_manage_readme
   failed_when: temp_var_manage_readme.stderr_lines|length > 0
   changed_when: "'never' == 'changed'"
 
 
-- name: format temp_var's - Readme
+- name: Format temp_var's - Readme
   ansible.builtin.set_fact:
     temp_var_manage_readme: "{{ temp_var_manage_readme.stdout }}"
+  no_log: true
 
 
 - name: Clone Repositories - Readme Management
@@ -98,7 +89,7 @@
     force: true
   with_items: "{{ temp_var_manage_readme }}"
   changed_when: "'never' == 'changed'"
-  #no_log: true
+  no_log: true
 
 
 - name: Create working branch
@@ -113,11 +104,10 @@
     executable: bash
   delegate_to: localhost
   connection: local
-  #changed_when: true == false
-  #when: item.changed | default(false)
   with_items: "{{ temp_var_manage_readme }}"
+  changed_when: "'never' == 'changed'"
   register: new_branch
-  #failed_when: new_branch.stderr_lines|length > 0
+  no_log: true
 
 
 - name: Add Readme
@@ -126,9 +116,7 @@
     dest: "{{ temp_repo_creation_directory }}/{{ item.name | replace(' ', '_') }}/README.md"
   with_items: "{{ temp_var_manage_readme }}"
   register: readme_update
-  #changed_when: readme_update.checksum != readme_update.invocation.module_args.checksum
-  #when: item.project.empty_repo|default(false) and item.item[0].state | default('present') == 'present'
-  #no_log: true
+  no_log: true
 
 
 - name: Create Merge Request for changes
@@ -136,7 +124,7 @@
     url: "{{ item.merge_request.api_url }}"
     method: POST
     body_format: json
-    status_code: [200,201]
+    status_code: [200, 201]
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ item.api_token }}"
@@ -151,10 +139,7 @@
   with_items: "{{ temp_var_manage_readme | from_yaml }}"
   when: not item.merge_request.exists| default(false)
   register: new_merge_request
-
-# - name: update iid in tmp var
-#   ansible.builtin.set_fact:
-#     temp_var_manage_readme.merge_request.id: item.
+  no_log: true
 
 
 - name: Commit Readme.md to repository
@@ -166,8 +151,8 @@
     export GIT_AUTHOR_EMAIL=helpdesk@nofusscomputing.com;
     export GIT_COMMITTER_NAME=nfc_bot;
     export GIT_COMMITTER_EMAIL=helpdesk@nofusscomputing.com;
-    export MR_NUMBER="{% if item.item.merge_request.number is defined %}{{ item.item.merge_request.number }}{% else %}{%if new_merge_request is defined %}{% for MR in new_merge_request.results %}{%if MR.json.id == item.item.id %}{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}"
-    
+    export MR_NUMBER="{% if item.item.merge_request.number is defined %}{{ item.item.merge_request.number }}{% else %}{% if new_merge_request is defined %}{% for MR in new_merge_request.results %}{% if MR.json.id == item.item.id %}{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}"
+
     git commit -m "$(echo 'docs(readme){{':'}} Updated Repository README
 
 
@@ -183,9 +168,7 @@
   delegate_to: localhost
   connection: local
   changed_when: true == false
-  #with_items: "{{ temp_var_manage_readme | from_yaml }}"
-  #when: item.project.empty_repo|default(false) and item.item[0].state | default('present') == 'present'
-  #no_log: true
+  no_log: true
   when: item.changed | default(false)
   with_items: "{{ readme_update.results | from_yaml }}"
 
@@ -195,7 +178,7 @@
     url: "{{ item.item.merge_request.api_url }}{% if item.item.merge_request.number is defined %}/{{ item.item.merge_request.number }}{% else %}{%if new_merge_request is defined %}{% for MR in new_merge_request.results %}{%if MR.json.id == item.item.id %}/{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}/notes"
     method: POST
     body_format: json
-    status_code: [200,201]
+    status_code: [200, 201]
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ item.item.api_token }}"
@@ -206,28 +189,26 @@
         "body": "Ansible configuration is configured for auto-merge.\n\nMerging this MR IAW configuration.\n\n/assign @nfc_bot"
       }
   with_items: "{{ readme_update.results | from_yaml }}"
-  #when: not item.merge_request.exists| default(false)
-  #register: merge_request_note
   when: item.item.readme.auto_merge
+  no_log: true
 
 
 - name: Merge the merge request
   ansible.builtin.uri:
-    url: "{{ item.item.merge_request.api_url }}{% if item.item.id is defined %}/{{ item.item.merge_request.number }}{% else %}{%if new_merge_request is defined %}{% for MR in new_merge_request.results %}{%if MR.json.id is defined%}/{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}/merge"
+    url: "{{ item.item.merge_request.api_url }}{% if item.item.id is defined %}/{{ item.item.merge_request.number }}{% else %}{% if new_merge_request is defined %}{% for MR in new_merge_request.results %}{% if MR.json.id is defined%}/{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}/merge"
     method: PUT
     body_format: json
-    status_code: [200,201]
+    status_code: [200, 201]
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ item.item.api_token }}"
     body: >-
       {
         "id": "{{ item.item.id }}",
-        "merge_request_iid": "{% if item.item.id is defined %}{{ item.item.merge_request.number }}{% else %}{%if new_merge_request is defined %}{% for MR in new_merge_request.results %}{%if MR.json.id is defined%}{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}",
+        "merge_request_iid": "{% if item.item.id is defined %}{{ item.item.merge_request.number }}{% else %}{% if new_merge_request is defined %}{% for MR in new_merge_request.results %}{% if MR.json.id is defined%}{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}",
         "should_remove_source_branch": true,
         "merge_when_pipeline_succeeds": true
       }
   with_items: "{{ readme_update.results | from_yaml }}"
-  #when: not item.merge_request.exists| default(false)
-  #register: merge_request_note
   when: item.item.readme.auto_merge
+  no_log: true

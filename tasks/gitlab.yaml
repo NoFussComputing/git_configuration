@@ -53,6 +53,7 @@
     - gitlab
     - readme
 
+
 - name: Download avatar if specified - Gitlab
   ansible.builtin.get_url:
     url: "{{ item.item[1].avatar }}"
@@ -148,7 +149,6 @@
   no_log: true
 
 
-# {% if item.item[1].avatar is defined %}"avatar": "{{ temp_repo_creation_directory}}/{{ item.item[1].name }}.png",{% endif %}
 - name: Project Configuration - Gitlab
   ansible.builtin.uri:
     url: "{{ item.project._links.self }}"
@@ -241,8 +241,6 @@
 
        url: {{ repository.project.web_url }}
 
-
-
      {% endfor %}{% endif %}{% endfor %}
   no_log: true
 
@@ -305,7 +303,6 @@
   community.general.gitlab_project_members:
     api_url: "{{ item.api_url }}"
     api_token: "{{ item.api_token }}"
-    # validate_certs: true
     project: "{{ item.project }}"
     gitlab_user: "{{ item.name }}"
     access_level: "{{ item.permission | default('guest') }}"
