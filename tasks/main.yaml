@@ -18,3 +18,8 @@
   ansible.builtin.import_tasks: readme.yaml
   tags:
     - readme
+
+- name: Clean pipelines
+  ansible.builtin.import_tasks: gitlab_clean_pipelines.yaml
+  tags:
+    - pipelines
