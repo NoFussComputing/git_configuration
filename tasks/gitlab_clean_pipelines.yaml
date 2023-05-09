@@ -1,7 +1,7 @@
 ---
-
 - name: Telemetry facts
   ansible.builtin.set_fact:
+    # how long it takes for a human to delete a ci/cd job
     task_duration_human: 30
     task_start_epoch: "{{ ansible_date_time.epoch }}"
 
@@ -16,20 +16,21 @@
       "project_id": "{{ lookup('ansible.builtin.env', 'CI_PROJECT_ID') }}",
       "source_branch": "{{ lookup('ansible.builtin.env', 'CI_MERGE_REQUEST_SOURCE_BRANCH_NAME') }}",
       "api_token": "{{ lookup('ansible.builtin.env', 'GIT_COMMIT_TOKEN') }}",
-      "pipelines_api_url": "{{ lookup('ansible.builtin.env', 'CI_API_V4_URL') }}/projects/{{ lookup('ansible.builtin.env', 'CI_PROJECT_ID') }}/pipelines?per_page=100&scope=branches&ref={{ lookup('ansible.builtin.env', 'CI_MERGE_REQUEST_SOURCE_BRANCH_NAME') }}"
+      "pipelines_api_url": "{{ lookup('ansible.builtin.env', 'CI_API_V4_URL') }}/projects/{{ lookup('ansible.builtin.env', 'CI_PROJECT_ID') }}/pipelines?per_page=100&scope=branches&ref={{ lookup('ansible.builtin.env', 'CI_MERGE_REQUEST_SOURCE_BRANCH_NAME') }}",
+      "issues_api_url": "{{ lookup('ansible.builtin.env', 'CI_API_V4_URL') }}/projects/{{ lookup('ansible.builtin.env', 'CI_PROJECT_ID') }}/issues",
 
       {% else %}
 
-      "project_id": 45741845,
-      "source_branch": "genesis",
+      "project_id": {{ project_id }},
+      "source_branch": "{{ source_branch }}",
       "api_token": "{{ api_token | default(role_git_conf.gitlab[0].api_token )}}",
-      "pipelines_api_url": "https://gitlab.com/api/v4/projects/45741845/pipelines",
-      "issues_api_url": "https://gitlab.com/api/v4/projects/45741845/issues",
-      "issue_title": "{{ ansible_date_time.date }} - Pipelines require Cleanup"
-      
+      "pipelines_api_url": "https://gitlab.com/api/v4/projects/{{ project_id }}/pipelines",
+      "issues_api_url": "https://gitlab.com/api/v4/projects/{{ project_id }}/issues",
 
 
       {% endif %}
+
+      "issue_title": "{{ ansible_date_time.date }} - Pipelines require Cleanup"
 
     }
 
@@ -86,20 +87,17 @@
 
       ``` json
 
-
       {{ branch_pipelines.json | to_nice_json }}
-
 
       ```
 
       </details>
 
-
       This automation job has saved you '{{ ((branch_pipelines.json|length)*task_duration_human)/60 | int }}' minutes
 
 
       /assign @nfc_bot
-  no_log: true
+  when: "existing_issue.json|length == 0 and branch_pipelines.json|length > 0"
 
     
 
@@ -113,7 +111,7 @@
     headers:
       PRIVATE-TOKEN: "{{ pipeline_data.api_token | default(role_git_conf.gitlab[0].api_token )}}"
   register: new_issue
-  when: "{{ existing_issue.json|length == 0 }} and branch_pipelines.json|length > 0"
+  when: "existing_issue.json|length == 0 and branch_pipelines.json|length > 0"
   no_log: true
 
 
@@ -121,21 +119,34 @@
   ansible.builtin.set_fact:
     issue: |-
       {% if existing_issue.json is defined and existing_issue.json|length > 0 %}{{ existing_issue.json[0] }}{% else %}{{ new_issue.json }}{% endif %}
-  when: "{{ existing_issue.json|length == 0 }} and branch_pipelines.json|length > 0"
+  when: "existing_issue.json|length == 0 and branch_pipelines.json|length > 0"
+  #no_log: true
+
+
+- name: Remove pipelines
+  ansible.builtin.uri:
+    url: "{{ issue._links.project }}/pipelines/{{ item.id }}"
+    method: DELETE
+    status_code: [200, 204]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ role_git_conf.gitlab[0].api_token_owner }}"
+  register: remove_pipelines
+  with_items: "{{ branch_pipelines.json }}"
   no_log: true
 
 
-- name: Final Telemetry facts
+- name: Telemetry fact - finish time
   ansible.builtin.set_fact:
-    task_duration_human: 30
     task_finish_epoch: "{{ now().strftime('%s') }}"
 
 
-- name: Final Telemetry facts
+- name: Telemetry fact - task duration
   ansible.builtin.set_fact:
-    task_duration_ansible: "{{ task_finish_epoch|int - task_start_epoch | int }}"
+    task_duration_ansible: "{{ task_finish_epoch|int - task_start_epoch|int }}"
 
-- name: Final Telemetry facts
+
+- name: Create comment for issue
   ansible.builtin.set_fact:
     issue_comment_removed_pipelines: |
       CI Jobs removed.
@@ -152,20 +163,9 @@
       </details>
 
       /spend {{ task_duration_ansible }}s
+
       /close
-
-
-- name: Remove pipelines
-  ansible.builtin.uri:
-    url: "{{ issue._links.project }}/pipelines/{{ item.id }}"
-    method: DELETE
-    status_code: [200, 204]
-    return_content: true
-    headers:
-      PRIVATE-TOKEN: "{{ role_git_conf.gitlab[0].api_token_owner }}"
-  register: remove_pipelines
-  with_items: "{{ branch_pipelines.json }}"
-  no_log: true
+  when: remove_pipelines and branch_pipelines.json|length > 0
 
 
 - name: Comment on Issue
