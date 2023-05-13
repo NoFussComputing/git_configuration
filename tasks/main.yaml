@@ -1,0 +1,25 @@
+---
+
+- name: Gitlab configuration
+  ansible.builtin.import_tasks: gitlab.yaml
+  when: role_git_conf.gitlab is defined
+  tags:
+    - gitlab
+
+
+- name: Github configuration
+  ansible.builtin.import_tasks: github.yaml
+  when: role_git_conf.github is defined
+  tags:
+    - github
+
+
+- name: Update Repository README.md
+  ansible.builtin.import_tasks: readme.yaml
+  tags:
+    - readme
+
+- name: Clean pipelines
+  ansible.builtin.import_tasks: gitlab_clean_pipelines.yaml
+  tags:
+    - pipelines

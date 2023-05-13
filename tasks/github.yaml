@@ -1,0 +1,235 @@
+---
+
+- name: Install required python packages - Github
+  ansible.builtin.pip:
+    name: "{{ item }}"
+  delegate_to: "localhost"
+  with_items:
+    - PyGithub>=1.54
+
+
+- name: GitHub Project Creation/Removal - Github
+  community.general.github_repo:
+    access_token: "{{ item[0].api_token }}"
+    organization: "{{ item[1].organization | default(omit) }}"
+    name: "{{ item[1].name }}"
+    description: "{{ item[1].description | default('') }}"
+    private: "{{ item[1].private | default(true) | bool }}"
+    state: "{{ item[1].state | default('present') }}"
+    force_defaults: "{{ item[1].force_defaults | default(false) | bool }}"
+  delegate_to: localhost
+  register: github_repository
+  with_subelements:
+    - "{{ role_git_conf.github }}"
+    - projects
+  no_log: true
+  tags:
+    - github
+    - readme
+
+
+- name: Fetch Branches - Github
+  ansible.builtin.uri:
+    url: "{{ item.repo.branches_url | replace('{/branch}', '') }}"
+    method: GET
+    body_format: json
+    status_code: [200]
+    return_content: true
+    headers:
+      Authorization: "Bearer {{ item.item[0].api_token }}"
+      X-GitHub-Api-Version: "2022-11-28"
+      owner: "{{ item.repo.owner.login }}"
+      repo: "{{ item.item[1].name }}"
+  delegate_to: localhost
+  register: github_current_branches
+  with_items: "{{ github_repository.results }}"
+  when: item.repo is defined and item.item[0].state | default('present') == 'present'
+  no_log: true
+
+
+- name: Setup temp repo dir - Github
+  ansible.builtin.file:
+    name: "{{ temp_repo_creation_directory }}/{{ item.item.item[1].name }}"
+    state: directory
+  with_items: "{{ github_current_branches.results }}"
+  when: item.item.repo is defined and item.json|length == 0 and item.item.item[0].state | default('present') == 'present'
+  no_log: true
+  tags:
+    - github
+    - readme
+
+
+- name: Added initial repo files - Github
+  ansible.builtin.template:
+    src: README.md.j2
+    dest: "{{ temp_repo_creation_directory }}/{{ item.item.item[1].name }}/README.md"
+  with_items: "{{ github_current_branches.results }}"
+  when: item.item.repo is defined and item.json|length == 0 and item.item.item[0].state | default('present') == 'present'
+  no_log: true
+
+
+- name: Added initial licence files - Github
+  ansible.builtin.template:
+    src: LICENCE.j2
+    dest: "{{ temp_repo_creation_directory }}/{{ item.item.item[1].name }}/LICENSE"
+  with_items: "{{ github_current_branches.results }}"
+  when: item.item.repo is defined and item.json|length == 0 and item.item.item[0].state | default('present') == 'present'
+  no_log: true
+
+
+- name: Create Branch structure (master->development) [empty repo only] - Github
+  ansible.builtin.shell: >-
+    export current_path=${PWD};
+    mkdir -p {{ temp_repo_creation_directory }}/{{ item.item.item[1].name }};
+    cd {{ temp_repo_creation_directory }}/{{ item.item.item[1].name }};
+    git init -b master;
+    git add .;
+    export GIT_AUTHOR_NAME=nfc-bot;
+    export GIT_AUTHOR_EMAIL=helpdesk@nofusscomputing.com;
+    export GIT_COMMITTER_NAME=nfc-bot;
+    export GIT_COMMITTER_EMAIL=helpdesk@nofusscomputing.com;
+    git commit -m "chore{{':'}} repo creation
+
+
+    Created with ansible
+
+
+    MR !1";
+    git remote add origin "https://{{ item.item.repo.owner.login }}:{{ item.item.item[0].api_token }}@{{ item.item.repo.clone_url | replace('https://','') }}";
+    git push origin master;
+    git checkout -b development master;
+    git push origin development;
+    cd ${current_path};
+    rm -Rf {{ temp_repo_creation_directory }}/{{ item.item.item[1].name }}
+  args:
+    executable: bash
+  delegate_to: localhost
+  connection: local
+  changed_when: true == false
+  with_items: "{{ github_current_branches.results }}"
+  when: item.item.repo is defined and item.json|length == 0 and item.item.item[0].state | default('present') == 'present'
+  no_log: true
+
+
+- name: Project Configuration - Github
+  ansible.builtin.uri:
+    url: "{{ item.item.repo.url }}"
+    method: PATCH
+    body_format: json
+    status_code: [200]
+    return_content: true
+    headers:
+      Authorization: "Bearer {{ item.item.item[0].api_token }}"
+      X-GitHub-Api-Version: "2022-11-28"
+      owner: "{{ item.item.repo.owner.login }}"
+      repo: "{{ item.item.item[1].name }}"
+    body: >-
+      {
+        "private": {{ item.item.item[1].private | default(true) | bool }},
+
+        "description": "{{ item.item.item[1].description | default('') }}",
+
+        {% if item.json|length > 0 %}"default_branch": "{{ item.item.item[1].default_branch | default('development') }}",{% endif %}
+
+        "has_issues": {{ item.item.item[1].has_issues | default(false) | bool }},
+        "has_projects": {{ item.item.item[1].has_projects | default(false) | bool }},
+        "has_wiki": {{ item.item.item[1].has_wiki | default(false) | bool }},
+        "has_downloads": {{ item.item.item[1].has_downloads | default(false) | bool }},
+        "is_template": {{ item.item.item[1].is_template | default(false) | bool }},
+
+        {% if item.item[1].organization is defined %}"allow_forking": {{ item.item[1].allow_forking | default(false) | bool }},{% endif %}
+
+        "allow_squash_merge": {{ item.item.item[1].allow_squash_merge | default(true) | bool }},
+        "allow_merge_commit": {{ item.item.item[1].allow_merge_commit | default(true) | bool }},
+        "allow_rebase_merge": {{ item.item.item[1].allow_rebase_merge | default(false) | bool }},
+        "allow_auto_merge": {{ item.item.item[1].allow_auto_merge | default(false) | bool }},
+        "delete_branch_on_merge": {{ item.item.item[1].delete_branch_on_merge | default(false) | bool }},
+        "allow_update_branch": {{ item.item.item[1].allow_update_branch | default(false) | bool }},
+        "use_squash_pr_title_as_default": {{ item.item.item[1].use_squash_pr_title_as_default | default(true) | bool }},
+        "squash_merge_commit_title": "{{ item.item.item[1].squash_merge_commit_title | default('PR_TITLE') }}",
+        "squash_merge_commit_message": "{{ item.item.item[1].squash_merge_commit_message | default('PR_BODY') }}",
+        "merge_commit_title": "{{ item.item.item[1].merge_commit_title | default('PR_TITLE') }}",
+        "merge_commit_message": "{{ item.item.item[1].merge_commit_message | default('PR_BODY') }}",
+        "archived": {{ item.item.item[1].archived | default(false) | bool }},
+        "web_commit_signoff_required": {{ item.item.item[1].web_commit_signoff_required | default(false) | bool }}
+      }
+
+  delegate_to: localhost
+  register: github_project_configuration
+  with_items: "{{ github_current_branches.results }}"
+  when: item.item.repo is defined and item.item.item[0].state | default('present') == 'present'
+  no_log: true
+
+
+- name: SetFact for repo access - Github
+  ansible.builtin.set_fact:
+    tmp_var_github_repo_access: >-
+      ---
+
+      {% for repository in github_repository.results %}{% if repository.item[1].users is defined and repository.repo is defined %}{% for user in repository.item[1].users %}{% if user.name != repository.repo.owner.login%}
+
+      - name: "{{ user.name }}"
+        state: "{{ user.state | default('present') }}"
+        api_token: "{{ repository.item[0].api_token }}"
+        permission: {{ user.permission | default('pull') }}
+        url: {{ repository.repo.collaborators_url | replace('{/collaborator}','') }}
+
+      {%endif%}{% endfor %}{% endif %}{% endfor %}
+  no_log: true
+
+
+- name: Repository Access - Github
+  ansible.builtin.uri:
+    url: "{{ item.url }}/{{ item.name }}"
+    method: PUT
+    body_format: json
+    status_code: [200, 201, 204]
+    return_content: true
+    headers:
+      Authorization: "Bearer {{ item.api_token }}"
+      X-GitHub-Api-Version: "2022-11-28"
+    body: >-
+      {
+        "permission": "{{ item.permission }}"
+      }
+  delegate_to: localhost
+  register: github_current_branches
+  with_items: "{{ tmp_var_github_repo_access | from_yaml }}"
+  when: item.name is defined and item.state | default('present') == 'present'
+  no_log: true
+
+
+# - name: Create/Remove branches
+#   community.general.gitlab_branch:
+#     api_job_token: "{{ item.api_job_token | default(omit) }}"
+#     api_oauth_token: "{{ item.api_oauth_token | default(omit) }}"
+#     api_password: "{{ item.api_password | default(omit) }}"
+#     api_token: "{{ item.api_token | default(omit) }}"
+#     api_url: "{{ item.api_url | default(omit) }}"
+#     api_username: "{{ item.api_username | default(omit) }}"
+#     branch: "{{ item.name }}"
+#     project: "{{ item.path }}"
+#     ref_branch: "{{ item.ref_branch | default('master') }}"
+#     state: "{{ item.state | default('present') }}"
+#   with_items: "{{ tmp_var_gitlab_branches | from_yaml }}"
+#   when: tmp_var_gitlab_branches is defined and tmp_var_gitlab_branches|length > 0 and item.name != 'master' and ((item.create is defined and item.create != false) or item.state | default('') == 'absent' )
+#   no_log: true
+
+
+# - name: Configure protected branches
+#   community.general.gitlab_protected_branch:
+#     api_job_token: "{{ item.api_job_token | default(omit) }}"
+#     api_oauth_token: "{{ item.api_oauth_token | default(omit) }}"
+#     api_password: "{{ item.api_password | default(omit) }}"
+#     api_token: "{{ item.api_token | default(omit) }}"
+#     api_url: "{{ item.api_url | default(omit) }}"
+#     api_username: "{{ item.api_username | default(omit) }}"
+#     project: "{{ item.path }}"
+#     name: "{{ item.name }}"
+#     merge_access_levels: "{{ item.merge_access_levels | default('nobody') }}"
+#     push_access_level: "{{ item.push_access_level | default('nobody') }}"
+#     state: "{{ item.state | default('present') }}"
+#     validate_certs: "{{ item.validate_certs| default(true) | bool }}"
+#   with_items: "{{ tmp_var_gitlab_branches | from_yaml }}"
+#   when: tmp_var_gitlab_branches is defined and tmp_var_gitlab_branches|length > 0
+#   no_log: true
