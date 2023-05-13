@@ -1,0 +1,23 @@
+galaxy_info:
+  role_name: git_configuration
+  author: No Fuss Computing
+  description: |-
+    git configuration as code.
+
+    Configure local, gitlab and github repositories.
+
+  issue_tracker_url: https://gitlab.com/nofusscomputing/infrastructure/ansible-roles
+
+  license: https://gitlab.com/nofusscomputing/infrastructure/ansible-roles/-/blob/master/LICENSE
+
+  min_ansible_version: '1.2'
+
+  # platforms:
+  #   - name: Debian
+  #     versions:
+  #     - "11"
+
+  galaxy_tags:
+    - git
+    - github
+    - gitlab
