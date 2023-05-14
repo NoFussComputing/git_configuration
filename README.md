@@ -2,7 +2,7 @@
 
 
 
-# No Fuss Computing - Git Configuration as code
+# No Fuss Computing - Ansible Role for Git Configuration as code
 
 <br>
 
@@ -41,6 +41,9 @@ links:
 - [Issues](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues)
 
 - [Merge Requests (Pull Requests)](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests)
+
+
+This repository contains an Ansible role that enables git configuration as code.
 
 
 
