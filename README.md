@@ -2,7 +2,7 @@
 
 
 
-# No Fuss Computing - Execution Environment
+# No Fuss Computing - Git Configuration as code
 
 <br>
 
