@@ -1,3 +1,10 @@
+## 0.1.0rc1 (2023-05-14)
+
+### Documentaton / Guides
+
+- **readme**: [d2129f88](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/d2129f88423f4f8ad47871fdef344c9641885528) - add a blurb [ [!7](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/7) ]
+- **readme**: [973acaff](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/973acaffed5bb460878b2796caf2652abf1f044c) - use correct title [ [!7](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/7) ]
+
 ## 0.1.0rc0 (2023-05-14)
 
 ### Bug Fixes
