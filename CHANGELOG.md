@@ -1,3 +1,9 @@
+## 0.1.0 (2023-05-15)
+
+### Continious Integration
+
+- [cc08e6f6](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/cc08e6f6af570ca5b2ec9562f6ef1cf10620b45e) - update gitlab-ci sub module to current commit [ [!4](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/4) [!17](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/17) ]
+
 ## 0.1.0rc2 (2023-05-15)
 
 ### Continious Integration
