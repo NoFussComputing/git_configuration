@@ -1,0 +1,214 @@
+---
+
+- name: Fetch current MR
+  ansible.builtin.uri:
+    url: "{{ item.project._links.merge_requests }}?source_branch={{ item.item[1].readme.branch | default('ansible-git-config') | urlencode }}&state=opened" # https://gitlab.com/api/v4/projects/45761768/merge_requests?source_branch=ansible-git-config
+    method: GET
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ item.item[0].api_token }}"
+    body: >-
+      {
+        "id": "{{ item.project.id }}"
+      }
+  with_items: "{{ gitlab_repository.results | from_yaml }}"
+  when: item.item[1].readme.merge_request | default(true) and item.item[1].readme is defined
+  register: current_merge_requests
+  no_log: true
+
+
+- name: Set fact - manage_readme - Gitlab
+  ansible.builtin.shell: >
+    echo $(echo `cat <<EOF
+
+    [
+    {% for repository in gitlab_repository.results %}{% if repository.item[1].state|default('present') != 'absent' and repository.item[1].readme.manage | default(false) %}
+      {
+        "name": "{{ repository.item[1].name }}",
+          "clone_url": "https://oauth2:{{ repository.item[0].api_token }}@{{ repository.project.web_url| replace('https://','') }}.git",
+          "id": {{ repository.project.id }},
+          "web_url": "{{ repository.project.web_url }}",
+          "provider": "gitlab",
+          "api_token": "{{ repository.item[0].api_token }}",
+          "merge_request": {
+            "manage": {{ repository.item[1].readme.merge_request | default(true) }},
+
+            {% set api_url = repository.project._links.merge_requests %}
+
+            {% if current_merge_requests.results|length > 0 %}{% for current_mr in current_merge_requests.results %}{% if current_mr.json is defined and current_mr.json|length > 0%}{% if current_mr.json[0].project_id|int == repository.project.id|int %}
+            "id": {{ current_mr.json[0].id }},
+            "number": {{ current_mr.json[0].iid }},
+            "exists": true,
+            "source_branch": "{{ current_mr.json[0].source_branch }}",
+            "target_branch": "{{ current_mr.json[0].target_branch }}",
+
+            {% set api_url = current_mr.item.project._links.merge_requests+'/'+current_mr.json[0].iid|string() %}
+            {% endif %}{% endif %}{% endfor %}{% endif %}
+
+            "api_url": "{{ api_url }}"
+          },
+          "readme": {{ repository.item[1].readme | from_yaml | to_json }},
+      },
+    {% endif %}{% endfor %}{% for repository in github_repository.results %}{% if repository.repo is defined and repository.item[1].readme.manage | default(false) %}
+
+    name: "{{ repository.item[1].name }}"
+      clone_url: "https://{{ repository.repo.owner.login }}:{{ repository.item[0].api_token }}@{{ repository.repo.clone_url | replace('https://','') }}.git"
+      web_url: "{{ repository.repo.html_url }}"
+      provider: github
+       readme: {{ repository.item[1].readme | from_yaml }}
+
+    {% endif %}{% endfor %}
+
+    ]
+
+    EOF`);
+
+  args:
+    executable: bash
+  no_log: true
+  register: temp_var_manage_readme
+  failed_when: temp_var_manage_readme.stderr_lines|length > 0
+  changed_when: "'never' == 'changed'"
+
+
+- name: Format temp_var's - Readme
+  ansible.builtin.set_fact:
+    temp_var_manage_readme: "{{ temp_var_manage_readme.stdout }}"
+  no_log: true
+
+
+- name: Clone Repositories - Readme Management
+  ansible.builtin.git:
+    repo: "{{ item.clone_url }}"
+    dest: "{{ temp_repo_creation_directory }}/{{ item.name | replace(' ', '_') }}/"
+    single_branch: yes
+    version: "development"
+    depth: 1
+    force: true
+  with_items: "{{ temp_var_manage_readme }}"
+  changed_when: "'never' == 'changed'"
+  no_log: true
+
+
+- name: Create working branch
+  ansible.builtin.shell: >-
+    export current_path=${PWD};
+    mkdir -p {{ temp_repo_creation_directory }}/{{ item.name | replace(' ', '_') }};
+    cd {{ temp_repo_creation_directory }}/{{ item.name | replace(' ', '_') }};
+    git checkout -b {{ item.readme.branch | default('ansible-git-config') }} development;
+    echo git push origin {{ item.readme.branch | default('ansible-git-config') }};
+    cd ${current_path};
+  args:
+    executable: bash
+  delegate_to: localhost
+  connection: local
+  with_items: "{{ temp_var_manage_readme }}"
+  changed_when: "'never' == 'changed'"
+  register: new_branch
+  no_log: true
+
+
+- name: Add Readme
+  ansible.builtin.template:
+    src: README.md.j2
+    dest: "{{ temp_repo_creation_directory }}/{{ item.name | replace(' ', '_') }}/README.md"
+  with_items: "{{ temp_var_manage_readme }}"
+  register: readme_update
+  no_log: true
+
+
+- name: Create Merge Request for changes
+  ansible.builtin.uri:
+    url: "{{ item.merge_request.api_url }}"
+    method: POST
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ item.api_token }}"
+    body: >-
+      {
+        "id": "{{ item.id }}",
+        "source_branch": "{{item.readme.branch | default('ansible-git-config') }}",
+        "target_branch": "development",
+        "title": "chore: Ansible Automated updates",
+        "description": "Ansible managed update.\n/assign @nfc_bot"
+      }
+  with_items: "{{ temp_var_manage_readme | from_yaml }}"
+  when: not item.merge_request.exists| default(false)
+  register: new_merge_request
+  no_log: true
+
+
+- name: Commit Readme.md to repository
+  ansible.builtin.shell: >-
+    export current_path=${PWD};
+    cd {{ temp_repo_creation_directory }}/{{ item.item.name | replace(' ', '_') }};
+    git add .;
+    export GIT_AUTHOR_NAME=nfc_bot;
+    export GIT_AUTHOR_EMAIL=helpdesk@nofusscomputing.com;
+    export GIT_COMMITTER_NAME=nfc_bot;
+    export GIT_COMMITTER_EMAIL=helpdesk@nofusscomputing.com;
+    export MR_NUMBER="{% if item.item.merge_request.number is defined %}{{ item.item.merge_request.number }}{% else %}{% if new_merge_request is defined %}{% for MR in new_merge_request.results %}{% if MR.json.id == item.item.id %}{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}"
+
+    git commit -m "$(echo 'docs(readme){{':'}} Updated Repository README
+
+
+    Updated by ansible
+
+
+    MR !$MR_NUMBER')";
+    git push origin {{ item.item.readme.branch | default('ansible-git-config') }};
+    cd ${current_path};
+    rm -Rf {{ temp_repo_creation_directory }}/{{ item.item.name | replace(' ', '_') }}
+  args:
+    executable: bash
+  delegate_to: localhost
+  connection: local
+  changed_when: true == false
+  no_log: true
+  when: item.changed | default(false)
+  with_items: "{{ readme_update.results | from_yaml }}"
+
+
+- name: Add Merge Request note
+  ansible.builtin.uri:
+    url: "{{ item.item.merge_request.api_url }}{% if item.item.merge_request.number is defined %}/{{ item.item.merge_request.number }}{% else %}{%if new_merge_request is defined %}{% for MR in new_merge_request.results %}{%if MR.json.id == item.item.id %}/{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}/notes"
+    method: POST
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ item.item.api_token }}"
+    body: >-
+      {
+        "id": "{{ item.item.id }}",
+        "merge_request_iid": "{% if item.item.merge_request.number is defined %}{{ item.item.merge_request.number }}{% else %}{%if new_merge_request is defined %}{% for MR in new_merge_request.results %}{%if MR.json.id == item.item.id %}{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}",
+        "body": "Ansible configuration is configured for auto-merge.\n\nMerging this MR IAW configuration.\n\n/assign @nfc_bot"
+      }
+  with_items: "{{ readme_update.results | from_yaml }}"
+  when: item.item.readme.auto_merge
+  no_log: true
+
+
+- name: Merge the merge request
+  ansible.builtin.uri:
+    url: "{{ item.item.merge_request.api_url }}{% if item.item.id is defined %}/{{ item.item.merge_request.number }}{% else %}{% if new_merge_request is defined %}{% for MR in new_merge_request.results %}{% if MR.json.id is defined%}/{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}/merge"
+    method: PUT
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ item.item.api_token }}"
+    body: >-
+      {
+        "id": "{{ item.item.id }}",
+        "merge_request_iid": "{% if item.item.id is defined %}{{ item.item.merge_request.number }}{% else %}{% if new_merge_request is defined %}{% for MR in new_merge_request.results %}{% if MR.json.id is defined%}{{ MR.json.iid }}{% endif %}{% endfor %}{% endif %}{% endif %}",
+        "should_remove_source_branch": true,
+        "merge_when_pipeline_succeeds": true
+      }
+  with_items: "{{ readme_update.results | from_yaml }}"
+  when: item.item.readme.auto_merge
+  no_log: true
