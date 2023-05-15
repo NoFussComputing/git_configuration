@@ -1,3 +1,9 @@
+## 0.1.0rc2 (2023-05-15)
+
+### Continious Integration
+
+- [cdf925d3](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/cdf925d38ecb9a20b373d2c1f9c9928d514c4e3c) - update to include fixes [ [!22](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/22) [!8](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/8) [!22](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/22) ]
+
 ## 0.1.0rc1 (2023-05-14)
 
 ### Documentaton / Guides
