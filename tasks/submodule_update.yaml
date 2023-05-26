@@ -3,7 +3,7 @@
 - name: Telemetry facts
   ansible.builtin.set_fact:
     # how long it takes for a human to delete a ci/cd job
-    task_duration_human: 60
+    task_duration_human: 300
     task_start_epoch: "{{ ansible_date_time.epoch }}"
 
 
@@ -17,7 +17,7 @@
 
 - name: required play variables
   ansible.builtin.set_fact:
-    automation_branch: automation-updates
+    automation_branch: automated-tasks
     merge_request_id: 'not found'
     mr_title: "{{ 'chore(git): Automated update of git sub-modules' | urlencode }}"
 
@@ -36,17 +36,12 @@
     submodules: "{{ submodules.stdout_lines | from_yaml }}"
 
 
-# check for existing branch, pull and switch
-
-
 - name: Sanity check, ensure git remote automation is absent
   ansible.builtin.command:
     cmd: "git remote remove automation"
     chdir: "{{ repo_root }}"
   changed_when: "'never' == 'changes'"
   failed_when: "'never' == 'fails'"
-  # register: git_remote_add
-  # failed_when: git_remote_add.rc > 0
 
 
 - name: Add Remote with auth details
@@ -70,7 +65,7 @@
   changed_when: existing_branch.rc == 1
 
 
-# pull automation branch if MR exists
+
 - name: Pull existing automation branch and switch
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
@@ -117,7 +112,6 @@
     playconfig: "{{ playconfig.stdout | from_yaml }}"
 
 
-# fix to do git submodule set-branch --branch development gitlab-ci
 - name: Update set sub-module branch
   ansible.builtin.command:
     cmd: "git submodule set-branch --branch {{ item.branch }} {{ item.name }}"
@@ -128,7 +122,6 @@
   failed_when: update_submodule_branch.rc != 0
 
 
-# add update module git submodule update --init --remote gitlab-ci instead of git pull
 - name: Update submodule
   ansible.builtin.command:
     cmd: "git submodule update --init --remote {{ item.name }}"
@@ -149,7 +142,7 @@
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   register: existing_merge_request
-  #when: update_submodules.changed|default(false)
+  when: not update_submodules.changed|default(false) and not update_submodules.skipped|default(false)
   no_log: true
 
 
@@ -168,7 +161,6 @@
   when: update_submodules.changed|default(false) and existing_branch.rc == 0
 
 
-# push new branch if MR doesnt exist
 - name: push automation branch
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
@@ -188,7 +180,6 @@
   when: existing_branch.rc == 0 and new_branch.changed
   failed_when: push_automation_branch.rc != 0
   register: push_automation_branch
-  #no_log: true
 
 
 - name: Generate Merge Request description
@@ -211,9 +202,9 @@
       /assign @nfc_bot
 
       /label {{ mr_labels }}
+  when: update_submodules.changed|default(false) and existing_merge_request.json|default('')|length == 0
 
 
-# create new MR if doent exist
 - name: Create Merge Request
   ansible.builtin.uri:
     url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?source_branch={{ automation_branch }}&target_branch={{ default_branch }}&&allow_collaboration=true&&title={{ mr_title }}&description={{ mr_description | urlencode }}"
@@ -224,7 +215,7 @@
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   register: new_merge_request
-  when: existing_merge_request.json|default('')|length == 0
+  when: update_submodules.changed|default(false) and existing_merge_request.json|default('')|length == 0
   changed_when: new_merge_request.json != ''
   no_log: true
 
@@ -243,6 +234,7 @@
   args:
     executable: bash
   register: mr_id_sanity_check
+  when: not update_submodules.changed|default(false) and not update_submodules.skipped|default(false)
   failed_when: "mr_id_sanity_check.rc > 0"
   changed_when: "'never' == 'changes'"
 
@@ -265,7 +257,6 @@
   register: added_changes
 
 
-# Add MR number to the commit message
 - name: Commit the changes
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
@@ -280,7 +271,6 @@
   failed_when: changes_commited.rc != 0
 
 
-# if commit successful, push
 - name: Push Changes to remote
   ansible.builtin.command:
     cmd: "git push automation {{ automation_branch }}"
@@ -318,7 +308,7 @@
       
       /spend {{ task_duration_ansible }}s
       {% endraw %}
-  when: push_branch_changes.skipped|default(false) == false
+  when: not push_branch_changes.skipped|default(false)
 
 
 - name: Generate Merge Request comment (no changes)
@@ -331,7 +321,7 @@
 
       /spend {{ task_duration_ansible }}s
       {% endraw %}
-  when: push_branch_changes.skipped|default(false)
+  when: merge_request_id|default('not found') != 'not found'
 
 
 - name: Comment on Merge Request
