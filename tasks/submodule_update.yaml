@@ -1,0 +1,358 @@
+---
+
+- name: Telemetry facts
+  ansible.builtin.set_fact:
+    # how long it takes for a human to delete a ci/cd job
+    task_duration_human: 300
+    task_start_epoch: "{{ ansible_date_time.epoch }}"
+
+
+- name: Gitlab CI Detection
+  ansible.builtin.set_fact:
+    project_path: "{{ lookup('env', 'CI_PROJECT_PATH') }}"
+    api_token:  "{{ lookup('env', 'GIT_COMMIT_TOKEN') }}"
+  when: lookup('env', 'CI') | default(false)
+
+
+
+- name: required play variables
+  ansible.builtin.set_fact:
+    automation_branch: automated-tasks
+    merge_request_id: 'not found'
+    mr_title: "{{ 'chore(git): Automated update of git sub-modules' | urlencode }}"
+
+
+- name: fetch current submodule names
+  ansible.builtin.shell: >
+    cd {{ repo_root }};
+    for mod in $(git submodule | awk '{print $2}'); do echo $mod; done
+  register: submodules
+  failed_when: submodules.rc > 0 or submodules.stderr_lines|length > 0
+  changed_when: "'never' == 'changes'"
+
+
+- name: submodule facts cleanup
+  ansible.builtin.set_fact:
+    submodules: "{{ submodules.stdout_lines | from_yaml }}"
+
+
+- name: Sanity check, ensure git remote automation is absent
+  ansible.builtin.command:
+    cmd: "git remote remove automation"
+    chdir: "{{ repo_root }}"
+  changed_when: "'never' == 'changes'"
+  failed_when: "'never' == 'fails'"
+
+
+- name: Add Remote with auth details
+  ansible.builtin.command:
+    cmd: "git remote add automation https://gitlab-ci-token:{{ api_token }}@gitlab.com/{{ project_path }}.git"
+    chdir: "{{ repo_root }}"
+  register: git_remote_add
+  failed_when: git_remote_add.rc > 0
+  changed_when: "'never' == 'changes'"
+  no_log: true
+
+
+- name: check for existing automation branch
+  ansible.builtin.shell: |
+    cd "{{ repo_root }}";
+    if [ "0$(git ls-remote automation {{ automation_branch }})" == "0" ]; then exit 0; else exit 1; fi
+  args:
+    executable: bash
+  register: existing_branch
+  failed_when: existing_branch.rc > 1
+  changed_when: existing_branch.rc == 1
+
+
+
+- name: Pull existing automation branch and switch
+  ansible.builtin.shell: |
+    cd "{{ repo_root }}";
+    git fetch --all;
+    git checkout --track automation/{{ automation_branch }};
+    git switch {{ automation_branch }} --force;
+    git reset --recurse-submodule --hard
+    # git log -3;
+  register: pull_branch
+  when: existing_branch.rc == 1
+
+
+- name: Generate Play Config
+  ansible.builtin.shell: |
+    echo $(echo `cat <<EOF
+    {
+      "gitmodules": [
+
+        {% for git_sub_module in submodules %}
+
+          {
+            "name": "{{ git_sub_module }}",
+            "url": "$(cd {{ repo_root }}/{{ git_sub_module }} && git remote get-url --all origin)",
+            "branch": "{{ submodule_branch }}",
+            "current_commit": "$(cd {{ repo_root }}/{{ git_sub_module }} && git reset --hard > /dev/null && git log -1 --format=format:'%H')",
+            "remote_head": "$(cd {{ repo_root }}/{{ git_sub_module }} && git fetch --all > /dev/null && git log origin/{{ submodule_branch }} -1 --format=format:'%H')",
+            "path": "{{ repo_root }}/{{ git_sub_module }}",
+            "remote_name": "$(git remote)"
+          },
+
+        {% endfor %}
+
+      ]
+
+    }
+
+    EOF`);
+  register: playconfig
+  changed_when: "'never' == 'changes'"
+
+
+- name: submodule facts cleanup
+  ansible.builtin.set_fact:
+    playconfig: "{{ playconfig.stdout | from_yaml }}"
+
+
+- name: Update set sub-module branch
+  ansible.builtin.command:
+    cmd: "git submodule set-branch --branch {{ item.branch }} {{ item.name }}"
+    chdir: "{{ repo_root }}"
+  register: update_submodule_branch
+  with_items: "{{ playconfig.gitmodules }}"
+  when: "item.current_commit != item.remote_head"
+  failed_when: update_submodule_branch.rc != 0
+
+
+- name: Update submodule
+  ansible.builtin.command:
+    cmd: "git submodule update --init --remote {{ item.name }}"
+    chdir: "{{ repo_root }}"
+  register: update_submodules
+  with_items: "{{ playconfig.gitmodules }}"
+  when: "item.current_commit != item.remote_head"
+  failed_when: update_submodules.rc != 0
+
+
+- name: Check for existing Merge Request
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?state=opened&source_branch={{ automation_branch }}&target_branch={{ default_branch }}"
+    method: GET
+    body_format: json
+    status_code: [200]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+  register: existing_merge_request
+  when: not update_submodules.changed|default(false) and not update_submodules.skipped|default(false)
+  no_log: true
+
+
+- name: Set Existing MR ID if exists
+  ansible.builtin.set_fact:
+    merge_request_id: "{{ existing_merge_request.json[0].iid | int | default('not found') }}"
+    merge_request_note_url: "{{ existing_merge_request.json[0].web_url | default('not found') }}/notes"
+  when: existing_merge_request.json|default('')|length > 0
+
+
+- name: create automation branch
+  ansible.builtin.command:
+    cmd: "git checkout -b {{ automation_branch }} {{ default_branch }}"
+    chdir: "{{ repo_root }}"
+  register: new_branch
+  when: update_submodules.changed|default(false) and existing_branch.rc == 0
+
+
+- name: push automation branch
+  ansible.builtin.shell: |
+    cd "{{ repo_root }}";
+    if [ $? == 0 ]; then 
+      git push automation {{ automation_branch }}; export GIT_PUSH_RC=$?;
+      if [ $GIT_PUSH_RC != 0 ]; then
+        echo "error pushing to remote";
+        exit $GIT_PUSH_RC;
+      fi
+    else 
+      echo "Error adding remote";
+      exit $?;
+    fi
+    
+  args:
+    executable: bash
+  when: existing_branch.rc == 0 and new_branch.changed
+  failed_when: push_automation_branch.rc != 0
+  register: push_automation_branch
+
+
+- name: Generate Merge Request description
+  ansible.builtin.set_fact:
+    mr_description: |
+      ## Summary
+
+      This is Merge Request is part of an task that is automated with ansible. This Merge Request is being raised to update the git sub-modules
+
+      ### Automation data
+
+      ``` json
+
+      {{ playconfig | to_nice_json }}
+
+      ```
+      
+      For more information please see the [documentation](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration)
+
+      /assign @nfc_bot
+
+      /label {{ mr_labels }}
+  when: update_submodules.changed|default(false) and existing_merge_request.json|default('')|length == 0
+
+
+- name: Create Merge Request
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?source_branch={{ automation_branch }}&target_branch={{ default_branch }}&&allow_collaboration=true&&title={{ mr_title }}&description={{ mr_description | urlencode }}"
+    method: POST
+    body_format: json
+    status_code: [200,201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+  register: new_merge_request
+  when: update_submodules.changed|default(false) and existing_merge_request.json|default('')|length == 0
+  changed_when: new_merge_request.json != ''
+  no_log: true
+
+
+- name: Set Merge Request ID from newly created MR
+  ansible.builtin.set_fact:
+    merge_request_id: "{{ new_merge_request.json.iid | int | default('not found') }}"
+    merge_request_note_url: "{{ existing_merge_request.json.web_url | default('not found') }}/notes"
+  when: new_merge_request.json|default('')|length > 0
+
+
+- name: Sanity Check - Must Have Merge Request ID
+  ansible.builtin.shell: \
+    cd "{{ repo_root }}";
+    if [ '0{{ merge_request_id }}' != '0not found' ]; then exit 0; else echo 'No Merge Request ID, job must fail'; exit 1; fi
+  args:
+    executable: bash
+  register: mr_id_sanity_check
+  when: not update_submodules.changed|default(false) and not update_submodules.skipped|default(false)
+  failed_when: "mr_id_sanity_check.rc > 0"
+  changed_when: "'never' == 'changes'"
+
+
+- name: Switch to Automation Branch
+  ansible.builtin.command:
+    cmd: "git switch {{ automation_branch }}"
+    chdir: "{{ repo_root }}"
+  when: "existing_branch.rc == 1"
+  register: switch_to_automation_branch
+  failed_when: "switch_to_automation_branch.rc > 0"
+
+
+- name: Stage Changes for commit
+  ansible.builtin.command:
+    cmd: "git add {{ item.item.name }}"
+    chdir: "{{ repo_root }}"
+  with_items: "{{ update_submodules.results }}"
+  when: item.changed
+  register: added_changes
+
+
+- name: Commit the changes
+  ansible.builtin.shell: |
+    cd "{{ repo_root }}";
+    export GIT_AUTHOR_NAME=nfc_bot;
+    export GIT_AUTHOR_EMAIL=helpdesk@nofusscomputing.com;
+    export GIT_COMMITTER_NAME=nfc_bot;
+    export GIT_COMMITTER_EMAIL=helpdesk@nofusscomputing.com;
+    git commit -m "$(echo 'chore(git): updated submodule {{ item.item.name }}\n\nAutomation Data:\n{{ item.item | to_nice_json }}\n\nChanges: {{ item.stdout }}\n\nMR !{{ merge_request_id }}')";
+  with_items: "{{ update_submodules.results }}"
+  when: item.changed
+  register: changes_commited
+  failed_when: changes_commited.rc != 0
+
+
+- name: Push Changes to remote
+  ansible.builtin.command:
+    cmd: "git push automation {{ automation_branch }}"
+    chdir: "{{ repo_root }}"
+  register: push_branch_changes
+  when: update_submodules.changed|default(false)
+
+
+- name: Telemetry fact - finish time
+  ansible.builtin.set_fact:
+    task_finish_epoch: "{{ now().strftime('%s') }}"
+
+
+- name: Telemetry fact - task duration
+  ansible.builtin.set_fact:
+    task_duration_ansible: "{{ task_finish_epoch|int - task_start_epoch|int }}"
+
+
+- name: Generate Merge Request comment
+  ansible.builtin.set_fact:
+    mr_comment: |
+      {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged.{% else%}won't be merged as part of this automation.{% endif %}
+
+
+      <details><summary>Automation Data:</summary>
+
+      ```json
+      
+      {{ playconfig | to_nice_json}}
+      
+      ```
+
+      </details>
+
+      
+      /spend {{ task_duration_ansible }}s
+      {% endraw %}
+  when: not push_branch_changes.skipped|default(false)
+
+
+- name: Generate Merge Request comment (no changes)
+  ansible.builtin.set_fact:
+    mr_comment: |
+      {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged{% else%}won't be merged as part of this automation.{% endif %}
+
+
+      There were **no changes** to commit.
+
+      /spend {{ task_duration_ansible }}s
+      {% endraw %}
+  when: merge_request_id|default('not found') != 'not found'
+
+
+- name: Comment on Merge Request
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/notes"
+    method: POST
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+    body:
+      body: "{{ mr_comment }}"
+  when: merge_request_id|default('not found') != 'not found'
+  no_log: true
+
+
+- name: Merge the Merge Request
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/merge?merge_when_pipeline_succeeds=true&should_remove_source_branch=true&squash=false"
+    method: PUT
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+  when: merge_request_id|default('not found') != 'not found' and auto_merge
+  no_log: true
+
+
+- ansible.builtin.debug:
+    msg:
+      - submodules: "{{ submodules }}"
+      - playconfig: "{{ playconfig }}"
