@@ -23,3 +23,8 @@
   ansible.builtin.import_tasks: gitlab_clean_pipelines.yaml
   tags:
     - pipelines
+
+- name: Update Git Sub-Modules
+  ansible.builtin.import_tasks: submodule_update.yaml
+  tags:
+    - submodule
