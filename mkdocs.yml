@@ -3,7 +3,7 @@ INHERIT: website-template/mkdocs.yml
 docs_dir: 'docs'
 
 repo_name: Git Configuration
-repo_url: https://gitlab.com/nofusscomputing/projects/gitlab-ci
+repo_url: https://gitlab.com/nofusscomputing/projects/ansible/git_configuration
 edit_uri: '/-/ide/project/nofusscomputing/projects/ansible/git_configuration/edit/development/-/docs/'
 
 nav:
