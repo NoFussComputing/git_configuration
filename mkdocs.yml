@@ -1,0 +1,33 @@
+INHERIT: website-template/mkdocs.yml
+
+docs_dir: 'docs'
+
+repo_name: Git Configuration
+repo_url: https://gitlab.com/nofusscomputing/projects/gitlab-ci
+edit_uri: '/-/ide/project/nofusscomputing/projects/ansible/git_configuration/edit/development/-/docs/'
+
+nav:
+- Home: index.md
+
+- Articles: 
+
+  - articles/index.md
+
+- Projects: 
+
+  - projects/index.md
+
+  - Ansible Roles:
+
+    - Git Configuration:
+
+      - projects/git_configuration/index.md
+
+      - projects/git_configuration/submodule.md
+
+- Operations: 
+
+  - operations/index.md
+
+- Contact Us: contact.md
+

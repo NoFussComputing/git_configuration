@@ -4,6 +4,7 @@ include:
     file:
       - .gitlab-ci_common.yaml
       - template/ansible-role.gitlab-ci.yaml
+      - template/website.gitlab-ci.yaml
 
 
 variables:
