@@ -11,6 +11,7 @@
   ansible.builtin.set_fact:
     project_path: "{{ lookup('env', 'CI_PROJECT_PATH') }}"
     api_token:  "{{ lookup('env', 'GIT_COMMIT_TOKEN') }}"
+    repo_root: "{{ lookup('env', 'CI_PROJECT_DIR') }}"
   when: lookup('env', 'CI') | default(false)
 
 
