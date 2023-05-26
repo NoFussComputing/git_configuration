@@ -7,20 +7,12 @@
     task_start_epoch: "{{ ansible_date_time.epoch }}"
 
 
-# current remote url git remote get-url --all $(git remote)
-# fetch submodules git submodule | awk '{print $2}'
-# check for changes ignoring untracked and submodules git status -s -uno --ignore-submodules
-# check for changes in submodules but not untracked git status -s -uno
-# check repo modified files git status -s -uno --ignore-submodules  | awk '{print $1}' | grep M
-- name: debug facts (needed to run task, user configurable)
+- name: Gitlab CI Detection
   ansible.builtin.set_fact:
-    repo_root: ""
-    submodule_branch: "development"
-    project_path: ""
-    default_branch: development
-    api_token: ''
-    mr_labels: ""
-    auto_merge: true
+    project_path: "{{ lookup('env', 'CI_PROJECT_PATH') }}"
+    api_token:  "{{ lookup('env', 'GIT_COMMIT_TOKEN') }}"
+  when: lookup('env', 'CI') | default(false)
+
 
 
 - name: required play variables
