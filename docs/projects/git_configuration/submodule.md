@@ -17,3 +17,4 @@ This task is designed to automate the updating of your repositories git submodul
 
 - link the gitlab-ci automated task (auto-generated one)
 - give cli examples
+- document gitlab ci config file
