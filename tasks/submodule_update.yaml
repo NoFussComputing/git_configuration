@@ -15,6 +15,19 @@
   when: lookup('env', 'CI') | default(false)
 
 
+- name: Gitlab include repository config file
+  ansible.builtin.include_vars: "{{ repo_root }}/.nfc_automation.yaml"
+  when: lookup('env', 'CI') | default(false)
+
+
+- name: Gitlab CI config Expansion
+  ansible.builtin.set_fact:
+    submodule_branch: "{{ role_git_conf.gitlab.submodule_branch | default(omit) }}"
+    default_branch: "{{ role_git_conf.gitlab.submodule_branch | default(omit) }}"
+    mr_labels: "{{ role_git_conf.gitlab.submodule_branch | default(omit) }}"
+    auto_merge: "{{ role_git_conf.gitlab.submodule_branch | default(false) }}"
+  when: lookup('env', 'CI') | default(false)
+
 
 - name: required play variables
   ansible.builtin.set_fact:
