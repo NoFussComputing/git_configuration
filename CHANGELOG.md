@@ -1,3 +1,27 @@
+## 0.2.0 (2023-05-28)
+
+### Bug Fixes
+
+- **submodule**: [3db6a4b9](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/3db6a4b98200f03e3b8f6c0cf0de8611121ddeef) - must use default branch for change checking [ [!18](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/18) ]
+- **submodule**: [5c71a5e1](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/5c71a5e19b3757e86a09aa72a3904151b173594a) - gitlab expansion use correct variables [ [!17](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/17) ]
+- **submodule**: [a9da88b4](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/a9da88b4e0d309f45c3a99c89cd34502e4e2de94) - specify remote on branch creation [ [!15](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/15) [#77](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/77) [!14](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/14) ]
+- **submodule**: [d2f65de2](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/d2f65de2ab78a08643a0ca6ec7dea7d8d4300625) - add missing variable repo_root [ [!13](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/13) ]
+
+### Code Refactor
+
+- [c6e3e639](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/c6e3e6394541132d8a3e2aea2a019a66825106d8) - fix linting errors [ [!18](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/18) ]
+
+### Documentaton / Guides
+
+- **submodule**: [c5c99ff6](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/c5c99ff6c286535fb6d0fe25d08d9a6b98c3c147) - detail how tasks work in gitlab [ [!18](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/18) ]
+
+### Features
+
+- **ci**: [ad03f001](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/ad03f001458d65181aef4dc373cb12bdb4057d54) - use ci repo automagic template for job creation [ [!18](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/18) ]
+- **submodule**: [1843fda8](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/1843fda83fa27c8aebec237c653c4520726a6314) - fetch branches [ [!16](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/16) [#77](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/77) [!14](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/14) ]
+- **submodule**: [bcd6c05f](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/bcd6c05f52bea7a0999cfeceab8577e9c50eb9fb) - list available branches for debugging [ [!15](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/15) [#77](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/77) [!14](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/14) ]
+- **submodule**: [54a9d588](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/54a9d588c2250076de053d4ba1d8e8e655e5811e) - read config from repossitory root [ [!14](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/14) [#8](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/8) [!29](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/29) [!1](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/1) [#1](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/1) [#25](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/25) [#26](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/26) ]
+
 ## 0.2.0rc0 (2023-05-26)
 
 ### Bug Fixes
