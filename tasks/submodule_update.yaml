@@ -169,7 +169,7 @@
 
 - name: create automation branch
   ansible.builtin.command:
-    cmd: "git checkout -b {{ automation_branch }} {{ default_branch }}"
+    cmd: "git checkout -b {{ automation_branch }} automation/{{ default_branch }}"
     chdir: "{{ repo_root }}"
   register: new_branch
   when: update_submodules.changed|default(false) and existing_branch.rc == 0
