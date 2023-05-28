@@ -1,3 +1,26 @@
+## 0.2.0rc0 (2023-05-26)
+
+### Bug Fixes
+
+- **readme**: [3299df15](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/3299df159a6a439caac9cd86536f657875154f34) - typo in dev brnach badge [ [!12](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/12) ]
+
+### Continious Integration
+
+- **docs**: [092fa67f](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/092fa67fa86d5947629d5b06c053cc3fcad2f07d) - add CI job to build docs ready for website [ [!12](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/12) [#5](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/5) ]
+- [6f83c0bb](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/6f83c0bbbfe3203d7d4889f87e2774bd39132cf9) - update to current HEAD [ [!12](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/12) ]
+
+### Documentaton / Guides
+
+- **website**: [a57e6215](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/a57e6215a74f6f37a5e006304519aaf3ca7ccb25) - fix repo url [ [!12](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/12) ]
+- [a1b232ec](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/a1b232ecb9cfcd592174a5a64abc696d055031cd) - initial creation of docs [ [!12](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/12) [#5](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/5) ]
+- **readme**: [5953eb5f](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/5953eb5fc3589e954a48abba67a1c16278eb849c) - fix type in dev badge [ [!11](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/11) ]
+
+### Features
+
+- **git_submodule**: [86700c11](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/86700c11cf24deb65848cc2766665ff5b93fbe4a) - added logic to detect gitlab CI and use [ [!12](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/12) [#5](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/5) ]
+- **git_submodule**: [081aa135](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/081aa135a154d4fcd674684e15054ed6776ad568) - initial git submodule auto update [ [!12](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/12) [#5](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/5) ]
+- **ci**: [bae73fb2](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/bae73fb22840fd391ba17354e71690580db40d2f) - use gitlab-ci template from nfc [ [!12](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/12) ]
+
 ## 0.1.0 (2023-05-15)
 
 ### Continious Integration
