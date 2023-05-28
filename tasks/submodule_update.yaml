@@ -167,9 +167,25 @@
   when: existing_merge_request.json|default('')|length > 0
 
 
-- name: create automation branch
+# - name: Sanity Check - Fetch all
+#   ansible.builtin.command:
+#     cmd: "git fetch --all"
+#     chdir: "{{ repo_root }}"
+#   register: new_branch
+#   when: update_submodules.changed|default(false) and existing_branch.rc == 0
+
+
+- name: Debug - list availaable branches
   ansible.builtin.command:
-    cmd: "git checkout -b {{ automation_branch }} {{ default_branch }}"
+    cmd: "git branch -a"
+    chdir: "{{ repo_root }}"
+  register: new_branch
+  when: update_submodules.changed|default(false) and existing_branch.rc == 0
+
+
+- name: Create automation branch
+  ansible.builtin.command:
+    cmd: "git checkout -b {{ automation_branch }} automation/{{ default_branch }}"
     chdir: "{{ repo_root }}"
   register: new_branch
   when: update_submodules.changed|default(false) and existing_branch.rc == 0
