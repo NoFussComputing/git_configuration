@@ -68,6 +68,14 @@
   no_log: true
 
 
+- name: Sanity Check - Fetch all
+  ansible.builtin.command:
+    cmd: "git fetch --all"
+    chdir: "{{ repo_root }}"
+  changed_when: "'never' == 'changes'"
+  failed_when: "'never' == 'fails'"
+
+
 - name: check for existing automation branch
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
@@ -167,19 +175,10 @@
   when: existing_merge_request.json|default('')|length > 0
 
 
-# - name: Sanity Check - Fetch all
-#   ansible.builtin.command:
-#     cmd: "git fetch --all"
-#     chdir: "{{ repo_root }}"
-#   register: new_branch
-#   when: update_submodules.changed|default(false) and existing_branch.rc == 0
-
-
-- name: Debug - list availaable branches
+- name: Debug - list available branches
   ansible.builtin.command:
     cmd: "git branch -a"
     chdir: "{{ repo_root }}"
-  register: new_branch
   when: update_submodules.changed|default(false) and existing_branch.rc == 0
 
 
