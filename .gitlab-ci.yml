@@ -3,9 +3,8 @@ include:
     ref: development
     file:
       - .gitlab-ci_common.yaml
-      - template/ansible-role.gitlab-ci.yaml
-      - template/website.gitlab-ci.yaml
-
+      - template/ansible-role.gitlab-ci.yaml # ToDo: remove this line post merge of nofusscomputing/projects/gitlab-ci!33
+      - template/automagic.gitlab-ci.yaml
 
 variables:
   MY_PROJECT_ID: "45705596"
