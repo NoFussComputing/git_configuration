@@ -23,9 +23,9 @@
 - name: Gitlab CI config Expansion
   ansible.builtin.set_fact:
     submodule_branch: "{{ role_git_conf.gitlab.submodule_branch | default(omit) }}"
-    default_branch: "{{ role_git_conf.gitlab.submodule_branch | default(omit) }}"
-    mr_labels: "{{ role_git_conf.gitlab.submodule_branch | default(omit) }}"
-    auto_merge: "{{ role_git_conf.gitlab.submodule_branch | default(false) }}"
+    default_branch: "{{ role_git_conf.gitlab.default_branch | default(omit) }}"
+    mr_labels: "{{ role_git_conf.gitlab.mr_labels | default(omit) }}"
+    auto_merge: "{{ role_git_conf.gitlab.auto_merge | default(false) }}"
   when: lookup('env', 'CI') | default(false)
 
 
