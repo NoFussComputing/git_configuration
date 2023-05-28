@@ -100,6 +100,15 @@
   when: existing_branch.rc == 1
 
 
+- name: No Automation branch, checkout default branch
+  ansible.builtin.command:
+    cmd: "git switch automation/{{ default_branch }}"
+    chdir: "{{ repo_root }}"
+  changed_when: "'never' == 'changes'"
+  failed_when: "'never' == 'fails'"
+  when: existing_branch.rc == 0
+
+
 - name: Generate Play Config
   ansible.builtin.shell: |
     echo $(echo `cat <<EOF
