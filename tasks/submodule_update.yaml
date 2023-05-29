@@ -173,7 +173,6 @@
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   register: existing_merge_request
-  when: not update_submodules.changed|default(false) and not update_submodules.skipped|default(false)
   no_log: true
 
 
