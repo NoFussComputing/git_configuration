@@ -392,6 +392,37 @@
     merge_request_user_can_approve: "{{ merge_request_user_can_approve | default(false) | bool }}"
 
 
+- name: Approve Merge Request
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/approve"
+    method: POST
+    body_format: json
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+  when: >
+    merge_request_id|default('not found') != 'not found' and
+    merge_request_needs_approval|int > 0 and
+    merge_request_user_can_approve|bool and
+    not merge_request_approval_require_password|bool and
+    not merge_request_approved|bool
+  register: merge_request_approve
+  failed_when: "'never' == 'fails'"
+  no_log: true
+
+
+- name: Variable Cleanup 'merge_request_approvals'
+  ansible.builtin.set_fact:
+    merge_request_approvals: "{{ merge_request_approve.json }}"
+  when: merge_request_approve.json|default('')|length > 0
+
+
+- name: DEBUG - Merge request Approvals post approval
+  ansible.builtin.debug:
+    msg: 
+      - "{{ merge_request_approvals | default('') | from_yaml }}"
+
+
 - name: Telemetry fact - finish time
   ansible.builtin.set_fact:
     task_finish_epoch: "{{ now().strftime('%s') }}"
