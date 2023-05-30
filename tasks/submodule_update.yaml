@@ -176,6 +176,12 @@
   no_log: true
 
 
+- name: DEBUG - Existing Merge request return_content
+  ansible.builtin.debug:
+    msg: "{{ existing_merge_request.json[0] | to_nice_json }}"
+  when: existing_merge_request.json|default('')|length > 0
+
+
 - name: Set Existing MR ID if exists
   ansible.builtin.set_fact:
     merge_request_id: "{{ existing_merge_request.json[0].iid | int | default('not found') }}"
@@ -255,6 +261,12 @@
   when: update_submodules.changed|default(false) and existing_merge_request.json|default('')|length == 0
   changed_when: new_merge_request.json != ''
   no_log: true
+
+
+- name: DEBUG - New Merge request return_content
+  ansible.builtin.debug:
+    msg: "{{ new_merge_request.json | to_nice_json }}"
+  when: new_merge_request.json|default('')|length > 0
 
 
 - name: Set Merge Request ID from newly created MR
