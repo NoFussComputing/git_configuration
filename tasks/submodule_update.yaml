@@ -245,7 +245,7 @@
       /assign @nfc_bot
 
       /label {{ mr_labels }}
-  when: update_submodules.changed|default(false) and existing_merge_request.json|default('')|length == 0
+  when: merge_request_id|default('not found') == 'not found' and existing_merge_request.json|default('')|length == 0
 
 
 - name: Create Merge Request
