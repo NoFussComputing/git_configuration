@@ -178,7 +178,7 @@
 
 - name: DEBUG - Existing Merge request return_content
   ansible.builtin.debug:
-    msg: "{{ existing_merge_request.json[0] | to_nice_json }}"
+    msg: "{{ existing_merge_request.json[0] | from_yaml }}"
   when: existing_merge_request.json|default('')|length > 0
 
 
@@ -265,7 +265,7 @@
 
 - name: DEBUG - New Merge request return_content
   ansible.builtin.debug:
-    msg: "{{ new_merge_request.json | to_nice_json }}"
+    msg: "{{ new_merge_request.json | from_yaml }}"
   when: new_merge_request.json|default('')|length > 0
 
 
