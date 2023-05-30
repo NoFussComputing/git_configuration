@@ -540,6 +540,7 @@
     url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/merge?merge_when_pipeline_succeeds=true&should_remove_source_branch=true&squash=false"
     method: PUT
     body_format: json
+    status_code: [200, 201, 401, 405, 409, 422]
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
