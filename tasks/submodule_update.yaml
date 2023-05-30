@@ -168,11 +168,11 @@
     url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?state=opened&source_branch={{ automation_branch }}&target_branch={{ default_branch }}"
     method: GET
     body_format: json
-    status_code: [200]
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   register: existing_merge_request
+  failed_when: "'never' == 'fail'"
   no_log: true
 
 
