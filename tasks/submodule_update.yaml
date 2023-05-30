@@ -345,6 +345,11 @@
   when: update_submodules.changed|default(false)
 
 
+- name: Pause for 20 seconds for gitlab to catchup
+  ansible.builtin.pause:
+    seconds: 20
+
+
 - name: Fetch Merge Request
   ansible.builtin.uri:
     url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}"
