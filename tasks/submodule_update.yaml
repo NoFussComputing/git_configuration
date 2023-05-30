@@ -272,7 +272,7 @@
 - name: Set Merge Request ID from newly created MR
   ansible.builtin.set_fact:
     merge_request_id: "{{ new_merge_request.json.iid | int | default('not found') }}"
-    merge_request_note_url: "{{ existing_merge_request.json.web_url | default('not found') }}/notes"
+    merge_request_note_url: "{{ new_merge_request.json.web_url | default('not found') }}/notes"
   when: new_merge_request.json|default('')|length > 0
 
 
