@@ -338,6 +338,60 @@
   when: update_submodules.changed|default(false)
 
 
+- name: Fetch Merge Request
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}"
+    method: GET
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+  when: merge_request_id|default('not found') != 'not found'
+  register: merge_request
+  no_log: true
+
+
+- name: Fetch Merge Request Approvals
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/approvals"
+    method: GET
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+  when: merge_request_id|default('not found') != 'not found'
+  register: merge_request_approvals
+  no_log: true
+
+
+- name: DEBUG - Merge request and Approvals
+  ansible.builtin.debug:
+    msg: 
+      - "{{ merge_request.json | default('') | from_yaml }}"
+      - "{{ merge_request_approvals.json | default('') | from_yaml }}"
+
+
+- name: Variable Cleanup 'merge_request_approvals'
+  ansible.builtin.set_fact:
+    merge_request_approvals: "{{ merge_request_approvals.json }}"
+  when: merge_request_approvals.json|default('')|length > 0
+
+
+- name: Set Merge approval facts
+  ansible.builtin.set_fact:
+    merge_request_needs_approval: "{{ merge_request_approvals.approvals_required | default(0) | int }}"
+    merge_request_user_can_approve: "{% for approval_user in merge_request_approvals.suggested_approvers %}{% if approval_user.username == 'nfc_bot' %}true{% endif %}{% endfor%}"
+    merge_request_approved: "{{ merge_request_approvals.approved | bool }}"
+    merge_request_approval_require_password: "{{ merge_request_approvals.require_password_to_approve | bool }}"
+
+
+- name: Update Merge approval facts
+  ansible.builtin.set_fact:
+    merge_request_user_can_approve: "{{ merge_request_user_can_approve | default(false) | bool }}"
+
+
 - name: Telemetry fact - finish time
   ansible.builtin.set_fact:
     task_finish_epoch: "{{ now().strftime('%s') }}"
@@ -388,6 +442,12 @@
       /spend {{ task_duration_ansible }}s
       {% endraw %}
   when: merge_request_id|default('not found') != 'not found' and not push_branch_changes.changed|default(false)
+
+
+
+- name: DEBUG - Show Merge Request comment
+  ansible.builtin.debug:
+    msg: "{{ mr_comment }}"
 
 
 - name: Comment on Merge Request
