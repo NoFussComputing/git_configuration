@@ -402,7 +402,14 @@
     body:
       body: "{{ mr_comment }}"
   when: merge_request_id|default('not found') != 'not found'
+  register: merge_request_comment
   no_log: true
+
+
+- name: DEBUG - Comment on Merge request return
+  ansible.builtin.debug:
+    msg: "{{ merge_request_comment.json | from_yaml }}"
+  when: merge_request_comment.json|default('')|length > 0
 
 
 - name: Merge the Merge Request
