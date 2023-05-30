@@ -12,6 +12,8 @@
     project_path: "{{ lookup('env', 'CI_PROJECT_PATH') }}"
     api_token:  "{{ lookup('env', 'GIT_COMMIT_TOKEN') }}"
     repo_root: "{{ lookup('env', 'CI_PROJECT_DIR') }}"
+    gitlab_job_number: "{{ lookup('env', 'CI_JOB_ID') }}"
+    gitlab_job_url: "{{ lookup('env', 'CI_JOB_URL') }}"
   when: lookup('env', 'CI') | default(false)
 
 
@@ -233,6 +235,12 @@
       This is Merge Request is part of an task that is automated with ansible. This Merge Request is being raised to update the git sub-modules
 
       ### Automation data
+      {% if gitlab_job_number is defined %}
+      ### :link: Links / References
+
+      - Gitlab Job [{{ gitlab_job_number }}]({{ gitlab_job_url }})
+
+      {% endif %}
 
       ``` json
 
@@ -343,6 +351,8 @@
     mr_comment: |
       {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged.{% else%}won't be merged as part of this automation.{% endif %}
 
+      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number }}]({{ gitlab_job_url }}){% endif %}
+
 
       <details><summary>Automation Data:</summary>
 
@@ -365,6 +375,7 @@
     mr_comment: |
       {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged{% else%}won't be merged as part of this automation.{% endif %}
 
+      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number }}]({{ gitlab_job_url }}){% endif %}
 
       There were **no changes** to commit.
 
