@@ -357,7 +357,7 @@
       
       /spend {{ task_duration_ansible }}s
       {% endraw %}
-  when: merge_request_id|default('not found') != 'not found' and push_branch_changes.changed|default(false))
+  when: merge_request_id|default('not found') != 'not found' and push_branch_changes.changed|default(false)
 
 
 - name: Generate Merge Request comment (no changes)
