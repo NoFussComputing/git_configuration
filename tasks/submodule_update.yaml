@@ -258,7 +258,7 @@
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   register: new_merge_request
-  when: update_submodules.changed|default(false) and existing_merge_request.json|default('')|length == 0
+  when: merge_request_id|default('not found') == 'not found' and existing_merge_request.json|default('')|length == 0 and mr_description is defined
   changed_when: new_merge_request.json != ''
   no_log: true
 
