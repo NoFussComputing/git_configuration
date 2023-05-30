@@ -35,6 +35,9 @@
   ansible.builtin.set_fact:
     automation_branch: automated-tasks
     merge_request_id: 'not found'
+    merge_request_existing: ''
+    merge_request_fetch: ''
+    merge_request_create: ''
     mr_title: "{{ 'chore(git): Automated update of git sub-modules' | urlencode }}"
 
 
@@ -188,6 +191,8 @@
   ansible.builtin.set_fact:
     merge_request_id: "{{ existing_merge_request.json[0].iid | int | default('not found') }}"
     merge_request_note_url: "{{ existing_merge_request.json[0].web_url | default('not found') }}/notes"
+    merge_request_existing: "{{ existing_merge_request.json[0] | default('') | from_yaml }}"
+    merge_request: "{{ existing_merge_request.json[0] | default('') | from_yaml }}"
   when: existing_merge_request.json|default('')|length > 0
 
 
@@ -283,6 +288,8 @@
   ansible.builtin.set_fact:
     merge_request_id: "{{ new_merge_request.json.iid | int | default('not found') }}"
     merge_request_note_url: "{{ new_merge_request.json.web_url | default('not found') }}/notes"
+    merge_request_create: "{{ new_merge_request.json | default('') | from_yaml }}"
+    merge_request: "{{ new_merge_request.json | default('') | from_yaml }}"
   when: new_merge_request.json|default('')|length > 0
 
 
@@ -375,7 +382,10 @@
 
 - name: Variable Cleanup 'merge_request_approvals'
   ansible.builtin.set_fact:
+    merge_request_approvals_fetch: "{{ merge_request_approvals.json }}"
     merge_request_approvals: "{{ merge_request_approvals.json }}"
+    merge_request_fetch: "{{ merge_request.json | default('') | from_yaml }}"
+    merge_request: "{{ merge_request.json | default('') | from_yaml }}"
   when: merge_request_approvals.json|default('')|length > 0
 
 
@@ -413,7 +423,8 @@
 
 - name: Variable Cleanup 'merge_request_approvals'
   ansible.builtin.set_fact:
-    merge_request_approvals: "{{ merge_request_approve.json }}"
+    merge_request_approvals_approve: "{{ merge_request_approve.json | default('') | from_yaml }}"
+    merge_request_approvals: "{{ merge_request_approve.json | default('') | from_yaml }}"
   when: merge_request_approve.json|default('')|length > 0
 
 
@@ -465,7 +476,7 @@
 
       ```json
       
-      {{ playconfig | to_nice_json}}
+      {{ playconfig | to_nice_json }}
       
       ```
 
@@ -529,12 +540,80 @@
     url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/merge?merge_when_pipeline_succeeds=true&should_remove_source_branch=true&squash=false"
     method: PUT
     body_format: json
-    status_code: [200, 201]
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   when: merge_request_id|default('not found') != 'not found' and auto_merge
-  #no_log: true
+  register: merge_the_merge_request
+  no_log: true
+
+
+- name: generate comment for unable to merge
+  ansible.builtin.set_fact:
+    merge_fail_comment: |
+      {% raw %}
+      I'm unabe to merge!!
+      
+      When I tried '{{ merge_the_merge_request.json.message }}' was returned
+
+      <details>
+      <summary>Debug Information</summary>
+
+      Existing MR
+      ```json
+      {{ merge_request_existing | to_nice_json }}
+      ```
+
+      Create Merge Request
+      ```json
+      {{ merge_request_create | to_nice_json }}
+      ```
+      - *push changes if any*
+      - *Pause for 20 Seconds*
+
+      Fetch merge request
+      ```json
+      {{ merge_request_fetch | to_nice_json }}
+      ```
+
+      Fetch Approvals
+      ```json
+      {{ merge_request_approvals_fetch | to_nice_json }}
+      ```
+
+      Approve MR
+      ```json
+      {{ merge_request_approvals_approve | to_nice_json }}
+      ```
+
+      sub module details:
+      ```json
+      {{ playconfig | to_nice_json }}
+
+      ```
+
+      </details>
+      
+      /spend 10s
+      {% endraw %}
+
+
+- name: Comment on Merge Request
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/notes"
+    method: POST
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+    body:
+      body: "{{ merge_fail_comment }}"
+  when: >
+    merge_request_id|default('not found') != 'not found' and auto_merge|bool and 
+    merge_the_merge_request.status|int > 400
+  register: merge_request_comment
+  no_log: true
 
 
 - ansible.builtin.debug:
