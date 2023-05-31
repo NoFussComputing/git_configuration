@@ -12,7 +12,10 @@
     project_path: "{{ lookup('env', 'CI_PROJECT_PATH') }}"
     api_token:  "{{ lookup('env', 'GIT_COMMIT_TOKEN') }}"
     repo_root: "{{ lookup('env', 'CI_PROJECT_DIR') }}"
+    gitlab_job_number: "{{ lookup('env', 'CI_JOB_ID') }}"
+    gitlab_job_url: "{{ lookup('env', 'CI_JOB_URL') }}"
   when: lookup('env', 'CI') | default(false)
+  no_log: true
 
 
 - name: Gitlab include repository config file
@@ -33,10 +36,43 @@
   ansible.builtin.set_fact:
     automation_branch: automated-tasks
     merge_request_id: 'not found'
+    merge_request_existing: ''
+    merge_request_fetch: ''
+    merge_request_create: ''
     mr_title: "{{ 'chore(git): Automated update of git sub-modules' | urlencode }}"
 
 
-- name: fetch current submodule names
+- name: Create folder for git clone
+  ansible.builtin.command:
+    cmd: mkdir "{{ repo_root }}/_automation_"
+  changed_when: "'never' == 'changes'"
+
+
+- name: Update var repo_root
+  ansible.builtin.set_fact:
+    repo_root: "{{ repo_root }}/_automation_"
+
+
+- name: Clone Repository to default branch
+  ansible.builtin.command:
+    cmd: "git clone --origin automation -b {{ default_branch }} --depth=100 https://gitlab-ci-token:{{ api_token }}@gitlab.com/{{ project_path }}.git {{ repo_root }}"
+  register: git_clone
+  failed_when: git_clone.rc > 0
+  changed_when: "'never' == 'changes'"
+  no_log: true
+
+
+- name: Update git submodules initialization
+  ansible.builtin.shell: >
+    cd {{ repo_root }};
+    git fetch --all;
+    git submodule update --init;
+  register: git_submodule_update_init
+  failed_when: git_submodule_update_init.rc|int > 0
+  changed_when: "'never' == 'changes'"
+
+
+- name: fetch submodule names
   ansible.builtin.shell: >
     cd {{ repo_root }};
     for mod in $(git submodule | awk '{print $2}'); do echo $mod; done
@@ -48,32 +84,6 @@
 - name: submodule facts cleanup
   ansible.builtin.set_fact:
     submodules: "{{ submodules.stdout_lines | from_yaml }}"
-
-
-- name: Sanity check, ensure git remote automation is absent
-  ansible.builtin.command:
-    cmd: "git remote remove automation"
-    chdir: "{{ repo_root }}"
-  changed_when: "'never' == 'changes'"
-  failed_when: "'never' == 'fails'"
-
-
-- name: Add Remote with auth details
-  ansible.builtin.command:
-    cmd: "git remote add automation https://gitlab-ci-token:{{ api_token }}@gitlab.com/{{ project_path }}.git"
-    chdir: "{{ repo_root }}"
-  register: git_remote_add
-  failed_when: git_remote_add.rc > 0
-  changed_when: "'never' == 'changes'"
-  no_log: true
-
-
-- name: Sanity Check - Fetch all
-  ansible.builtin.command:
-    cmd: "git fetch --all"
-    chdir: "{{ repo_root }}"
-  changed_when: "'never' == 'changes'"
-  failed_when: "'never' == 'fails'"
 
 
 - name: check for existing automation branch
@@ -91,22 +101,13 @@
 - name: Pull existing automation branch and switch
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
-    git fetch --all;
+    # git fetch --all;
     git checkout --track automation/{{ automation_branch }};
-    git switch {{ automation_branch }} --force;
-    git reset --recurse-submodule --hard
+    #git switch {{ automation_branch }} --force;
+    #git reset --recurse-submodule --hard
     # git log -3;
   register: pull_branch
   when: existing_branch.rc == 1
-
-
-- name: No Automation branch, checkout default branch
-  ansible.builtin.command:
-    cmd: "git switch automation/{{ default_branch }}"
-    chdir: "{{ repo_root }}"
-  changed_when: "'never' == 'changes'"
-  failed_when: "'never' == 'fails'"
-  when: existing_branch.rc == 0
 
 
 - name: Generate Play Config
@@ -168,18 +169,26 @@
     url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?state=opened&source_branch={{ automation_branch }}&target_branch={{ default_branch }}"
     method: GET
     body_format: json
-    status_code: [200]
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   register: existing_merge_request
+  failed_when: "'never' == 'fail'"
   no_log: true
+
+
+- name: DEBUG - Existing Merge request return_content
+  ansible.builtin.debug:
+    msg: "{{ existing_merge_request.json[0] | from_yaml }}"
+  when: existing_merge_request.json|default('')|length > 0
 
 
 - name: Set Existing MR ID if exists
   ansible.builtin.set_fact:
     merge_request_id: "{{ existing_merge_request.json[0].iid | int | default('not found') }}"
     merge_request_note_url: "{{ existing_merge_request.json[0].web_url | default('not found') }}/notes"
+    merge_request_existing: "{{ existing_merge_request.json[0] | default('') | from_yaml }}"
+    merge_request: "{{ existing_merge_request.json[0] | default('') | from_yaml }}"
   when: existing_merge_request.json|default('')|length > 0
 
 
@@ -222,11 +231,19 @@
 - name: Generate Merge Request description
   ansible.builtin.set_fact:
     mr_description: |
-      ## Summary
+      ## :notepad_spiral: Summary
 
       This is Merge Request is part of an task that is automated with ansible. This Merge Request is being raised to update the git sub-modules
 
-      ### Automation data
+      
+      {% if gitlab_job_number is defined %}
+      ### :link: Links / References
+
+      - Gitlab Job [{{ gitlab_job_number }}]({{ gitlab_job_url }})
+
+      {% endif %}
+
+      ### :robot: Automation data
 
       ``` json
 
@@ -239,7 +256,7 @@
       /assign @nfc_bot
 
       /label {{ mr_labels }}
-  when: update_submodules.changed|default(false) and existing_merge_request.json|default('')|length == 0
+  when: merge_request_id|default('not found') == 'not found' and existing_merge_request.json|default('')|length == 0
 
 
 - name: Create Merge Request
@@ -252,15 +269,27 @@
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   register: new_merge_request
-  when: update_submodules.changed|default(false) and existing_merge_request.json|default('')|length == 0
+  when: >
+    merge_request_id|default('not found') == 'not found' and
+    existing_merge_request.json|default('')|length == 0 and 
+    mr_description is defined and
+    not push_automation_branch.skipped|default(false)|bool
   changed_when: new_merge_request.json != ''
   no_log: true
+
+
+- name: DEBUG - New Merge request return_content
+  ansible.builtin.debug:
+    msg: "{{ new_merge_request.json | from_yaml }}"
+  when: new_merge_request.json|default('')|length > 0
 
 
 - name: Set Merge Request ID from newly created MR
   ansible.builtin.set_fact:
     merge_request_id: "{{ new_merge_request.json.iid | int | default('not found') }}"
-    merge_request_note_url: "{{ existing_merge_request.json.web_url | default('not found') }}/notes"
+    merge_request_note_url: "{{ new_merge_request.json.web_url | default('not found') }}/notes"
+    merge_request_create: "{{ new_merge_request.json | default('') | from_yaml }}"
+    merge_request: "{{ new_merge_request.json | default('') | from_yaml }}"
   when: new_merge_request.json|default('')|length > 0
 
 
@@ -316,6 +345,121 @@
   when: update_submodules.changed|default(false)
 
 
+- name: Pause for 20 seconds for gitlab to catchup
+  ansible.builtin.pause:
+    seconds: 20
+
+
+- name: Fetch Merge Request
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}"
+    method: GET
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+  when: merge_request_id|default('not found') != 'not found'
+  register: merge_request
+  no_log: true
+
+
+- name: Fetch Merge Request Approvals
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/approvals"
+    method: GET
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+  when: merge_request_id|default('not found') != 'not found'
+  register: merge_request_approvals
+  no_log: true
+
+
+- name: DEBUG - Merge request and Approvals
+  ansible.builtin.debug:
+    msg: 
+      - "{{ merge_request.json | default('') | from_yaml }}"
+      - "{{ merge_request_approvals.json | default('') | from_yaml }}"
+
+
+- name: Variable Cleanup 'merge_request_approvals'
+  ansible.builtin.set_fact:
+    merge_request_approvals_fetch: "{{ merge_request_approvals.json }}"
+    merge_request_approvals: "{{ merge_request_approvals.json }}"
+    merge_request_fetch: "{{ merge_request.json | default('') | from_yaml }}"
+    merge_request: "{{ merge_request.json | default('') | from_yaml }}"
+  when: merge_request_approvals.json|default('')|length > 0
+
+
+- name: Set Merge approval facts
+  ansible.builtin.set_fact:
+    merge_request_needs_approval: "{{ merge_request_approvals.approvals_required | default(0) | int }}"
+    merge_request_user_can_approve: "{% for approval_user in merge_request_approvals.suggested_approvers %}{% if approval_user.username == 'nfc_bot' %}true{% endif %}{% endfor%}"
+    merge_request_approved: "{{ merge_request_approvals.approved | bool }}"
+    merge_request_approval_require_password: "{{ merge_request_approvals.require_password_to_approve | bool }}"
+  when: merge_request_id|default('not found') != 'not found'
+
+
+- name: Update Merge approval facts
+  ansible.builtin.set_fact:
+    merge_request_user_can_approve: "{{ merge_request_user_can_approve | default(false) | bool }}"
+  when: merge_request_id|default('not found') != 'not found'
+
+
+- name: Approve Merge Request
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/approve"
+    method: POST
+    body_format: json
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+  when: >
+    merge_request_id|default('not found') != 'not found' and
+    merge_request_needs_approval|int > 0 and
+    merge_request_user_can_approve|bool and
+    not merge_request_approval_require_password|bool and
+    not merge_request_approved|bool
+  register: merge_request_approve
+  failed_when: "'never' == 'fails'"
+  no_log: true
+
+
+- name: Variable Cleanup 'merge_request_approvals'
+  ansible.builtin.set_fact:
+    merge_request_approvals_approve: "{{ merge_request_approve.json | default('') | from_yaml }}"
+    merge_request_approvals: "{{ merge_request_approve.json | default('') | from_yaml }}"
+  when: merge_request_approve.json|default('')|length > 0
+
+
+- name: DEBUG - Merge request Approvals post approval
+  ansible.builtin.debug:
+    msg: 
+      - "{{ merge_request_approvals | default('') | from_yaml }}"
+
+
+- name: Approval fact - Addendum to MR Comment
+  ansible.builtin.set_fact:
+    merge_request_approval_comment: |
+      {% raw%}
+      {% if merge_request_needs_approval|default(0)|int > 0 %}This Merge request requires approval from {{ merge_request_needs_approval | int }} approver(s)
+      {% if merge_request_approved|bool %}. However this MR is already approved. :white_check_mark:{% endif%}
+      {% if not merge_request_approved|bool %} {% if merge_request_user_can_approve|bool %}{% if not merge_request_approval_require_password|bool%}, to which I have the required permissions to do so. :white_check_mark:{% else %}to which I have the required permissions to do so, however don't have any thumbs to enter a password as is required for approving a Merge request. :red_circle:{% endif %}{% else %}to which I don't have the required permissions to do so. :red_circle:
+
+      :construction: /cc {% for approval_user in merge_request_approvals.approvers %}@{{approval_user.user.username}}  {% endfor %}, Please review and approve.{% endif %}{% endif %}
+      {% else %}This Merge request does not require approval. :white_check_mark:{% endif%}
+      {% endraw%}
+
+
+- name: DEBUG - Merge request approvals addendum to comment
+  ansible.builtin.debug:
+    msg: 
+      - "{{ merge_request_approval_comment }}"
+
+
 - name: Telemetry fact - finish time
   ansible.builtin.set_fact:
     task_finish_epoch: "{{ now().strftime('%s') }}"
@@ -329,36 +473,52 @@
 - name: Generate Merge Request comment
   ansible.builtin.set_fact:
     mr_comment: |
-      {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged.{% else%}won't be merged as part of this automation.{% endif %}
+      {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged. :white_check_mark:{% else%}won't be merged as part of this automation. :no_entry:{% endif %}
+
+
+      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number }}]({{ gitlab_job_url }}){% endif %}
 
 
       <details><summary>Automation Data:</summary>
 
       ```json
       
-      {{ playconfig | to_nice_json}}
+      {{ playconfig | to_nice_json }}
       
       ```
 
       </details>
 
+      {{ merge_request_approval_comment }}
       
       /spend {{ task_duration_ansible }}s
       {% endraw %}
-  when: not push_branch_changes.skipped|default(false)
+  when: merge_request_id|default('not found') != 'not found' and push_branch_changes.changed|default(false)
 
 
 - name: Generate Merge Request comment (no changes)
   ansible.builtin.set_fact:
     mr_comment: |
-      {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged{% else%}won't be merged as part of this automation.{% endif %}
+      {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged. :white_check_mark:{% else%}won't be merged as part of this automation. :red_circle:{% endif %}
 
 
-      There were **no changes** to commit.
+      :no_entry: There were **no changes** to commit.
+
+
+      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number }}]({{ gitlab_job_url }}){% endif %}
+
+      {{ merge_request_approval_comment }}
 
       /spend {{ task_duration_ansible }}s
       {% endraw %}
-  when: merge_request_id|default('not found') != 'not found'
+  when: merge_request_id|default('not found') != 'not found' and not push_branch_changes.changed|default(false)
+
+
+
+- name: DEBUG - Show Merge Request comment
+  ansible.builtin.debug:
+    msg: "{{ mr_comment }}"
+  when: mr_comment is defined
 
 
 - name: Comment on Merge Request
@@ -373,7 +533,14 @@
     body:
       body: "{{ mr_comment }}"
   when: merge_request_id|default('not found') != 'not found'
+  register: merge_request_comment
   no_log: true
+
+
+- name: DEBUG - Comment on Merge request return
+  ansible.builtin.debug:
+    msg: "{{ merge_request_comment.json | from_yaml }}"
+  when: merge_request_comment.json|default('')|length > 0
 
 
 - name: Merge the Merge Request
@@ -381,11 +548,80 @@
     url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/merge?merge_when_pipeline_succeeds=true&should_remove_source_branch=true&squash=false"
     method: PUT
     body_format: json
-    status_code: [200, 201]
+    status_code: [200, 201, 401, 405, 409, 422]
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   when: merge_request_id|default('not found') != 'not found' and auto_merge
+  register: merge_the_merge_request
+  no_log: true
+
+
+- name: generate comment for unable to merge
+  ansible.builtin.set_fact:
+    merge_fail_comment: |
+      {% raw %}
+      I'm unabe to merge!!
+      
+      When I tried '{{ merge_the_merge_request.json.message }}' was returned
+
+      <details>
+      <summary>Debug Information</summary>
+
+      Existing MR
+      ```json
+      {{ merge_request_existing | to_nice_json }}
+      ```
+
+      Create Merge Request
+      ```json
+      {{ merge_request_create | to_nice_json }}
+      ```
+      - *push changes if any*
+      - *Pause for 20 Seconds*
+
+      Fetch merge request
+      ```json
+      {{ merge_request_fetch | to_nice_json }}
+      ```
+
+      Fetch Approvals
+      ```json
+      {{ merge_request_approvals_fetch | to_nice_json }}
+      ```
+
+      Approve MR
+      ```json
+      {{ merge_request_approvals_approve | to_nice_json }}
+      ```
+
+      sub module details:
+      ```json
+      {{ playconfig | to_nice_json }}
+
+      ```
+
+      </details>
+      
+      /spend 10s
+      {% endraw %}
+
+
+- name: Comment on Merge Request due to failure
+  ansible.builtin.uri:
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/notes"
+    method: POST
+    body_format: json
+    status_code: [200, 201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ api_token }}"
+    body:
+      body: "{{ merge_fail_comment }}"
+  when: >
+    merge_request_id|default('not found') != 'not found' and auto_merge|bool and 
+    merge_the_merge_request.status|int > 400
+  register: merge_request_comment
   no_log: true
 
 
