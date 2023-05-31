@@ -15,6 +15,7 @@
     gitlab_job_number: "{{ lookup('env', 'CI_JOB_ID') }}"
     gitlab_job_url: "{{ lookup('env', 'CI_JOB_URL') }}"
   when: lookup('env', 'CI') | default(false)
+  no_log: true
 
 
 - name: Gitlab include repository config file
@@ -41,7 +42,37 @@
     mr_title: "{{ 'chore(git): Automated update of git sub-modules' | urlencode }}"
 
 
-- name: fetch current submodule names
+- name: Create folder for git clone
+  ansible.builtin.command:
+    cmd: mkdir "{{ repo_root }}/_automation_"
+  changed_when: "'never' == 'changes'"
+
+
+- name: Update var repo_root
+  ansible.builtin.set_fact:
+    repo_root: "{{ repo_root }}/_automation_"
+
+
+- name: Clone Repository to default branch
+  ansible.builtin.command:
+    cmd: "git clone --origin automation -b {{ default_branch }} --depth=100 https://gitlab-ci-token:{{ api_token }}@gitlab.com/{{ project_path }}.git {{ repo_root }}"
+  register: git_clone
+  failed_when: git_clone.rc > 0
+  changed_when: "'never' == 'changes'"
+  no_log: true
+
+
+- name: Update git submodules initialization
+  ansible.builtin.shell: >
+    cd {{ repo_root }};
+    git fetch --all;
+    git submodule update --init;
+  register: git_submodule_update_init
+  failed_when: git_submodule_update_init.rc|int > 0
+  changed_when: "'never' == 'changes'"
+
+
+- name: fetch submodule names
   ansible.builtin.shell: >
     cd {{ repo_root }};
     for mod in $(git submodule | awk '{print $2}'); do echo $mod; done
@@ -53,32 +84,6 @@
 - name: submodule facts cleanup
   ansible.builtin.set_fact:
     submodules: "{{ submodules.stdout_lines | from_yaml }}"
-
-
-- name: Sanity check, ensure git remote automation is absent
-  ansible.builtin.command:
-    cmd: "git remote remove automation"
-    chdir: "{{ repo_root }}"
-  changed_when: "'never' == 'changes'"
-  failed_when: "'never' == 'fails'"
-
-
-- name: Add Remote with auth details
-  ansible.builtin.command:
-    cmd: "git remote add automation https://gitlab-ci-token:{{ api_token }}@gitlab.com/{{ project_path }}.git"
-    chdir: "{{ repo_root }}"
-  register: git_remote_add
-  failed_when: git_remote_add.rc > 0
-  changed_when: "'never' == 'changes'"
-  no_log: true
-
-
-- name: Sanity Check - Fetch all
-  ansible.builtin.command:
-    cmd: "git fetch --all"
-    chdir: "{{ repo_root }}"
-  changed_when: "'never' == 'changes'"
-  failed_when: "'never' == 'fails'"
 
 
 - name: check for existing automation branch
@@ -96,22 +101,13 @@
 - name: Pull existing automation branch and switch
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
-    git fetch --all;
+    # git fetch --all;
     git checkout --track automation/{{ automation_branch }};
-    git switch {{ automation_branch }} --force;
-    git reset --recurse-submodule --hard
+    #git switch {{ automation_branch }} --force;
+    #git reset --recurse-submodule --hard
     # git log -3;
   register: pull_branch
   when: existing_branch.rc == 1
-
-
-- name: No Automation branch, checkout default branch
-  ansible.builtin.command:
-    cmd: "git switch automation/{{ default_branch }}"
-    chdir: "{{ repo_root }}"
-  changed_when: "'never' == 'changes'"
-  failed_when: "'never' == 'fails'"
-  when: existing_branch.rc == 0
 
 
 - name: Generate Play Config
