@@ -404,11 +404,13 @@
     merge_request_user_can_approve: "{% for approval_user in merge_request_approvals.suggested_approvers %}{% if approval_user.username == 'nfc_bot' %}true{% endif %}{% endfor%}"
     merge_request_approved: "{{ merge_request_approvals.approved | bool }}"
     merge_request_approval_require_password: "{{ merge_request_approvals.require_password_to_approve | bool }}"
+  when: merge_request_id|default('not found') != 'not found'
 
 
 - name: Update Merge approval facts
   ansible.builtin.set_fact:
     merge_request_user_can_approve: "{{ merge_request_user_can_approve | default(false) | bool }}"
+  when: merge_request_id|default('not found') != 'not found'
 
 
 - name: Approve Merge Request
@@ -520,6 +522,7 @@
 - name: DEBUG - Show Merge Request comment
   ansible.builtin.debug:
     msg: "{{ mr_comment }}"
+  when: mr_comment is defined
 
 
 - name: Comment on Merge Request
@@ -608,7 +611,7 @@
       {% endraw %}
 
 
-- name: Comment on Merge Request
+- name: Comment on Merge Request due to failure
   ansible.builtin.uri:
     url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests/{{ merge_request_id }}/notes"
     method: POST
