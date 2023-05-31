@@ -273,7 +273,11 @@
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
   register: new_merge_request
-  when: merge_request_id|default('not found') == 'not found' and existing_merge_request.json|default('')|length == 0 and mr_description is defined
+  when: >
+    merge_request_id|default('not found') == 'not found' and
+    existing_merge_request.json|default('')|length == 0 and 
+    mr_description is defined and
+    not push_automation_branch.skipped|default(false)|bool
   changed_when: new_merge_request.json != ''
   no_log: true
 
