@@ -174,13 +174,14 @@
       PRIVATE-TOKEN: "{{ api_token }}"
   register: existing_merge_request
   failed_when: "'never' == 'fail'"
+  changed_when: existing_merge_request.json|length|int > 0
   no_log: true
 
 
 - name: DEBUG - Existing Merge request return_content
   ansible.builtin.debug:
     msg: "{{ existing_merge_request.json[0] | from_yaml }}"
-  when: existing_merge_request.json|default('')|length > 0
+  when: existing_merge_request.changed|default(false)
 
 
 - name: Set Existing MR ID if exists
