@@ -37,3 +37,9 @@ Submodule.Integration.Test:
         - ".nfc_automation.yaml"
       when: always
     - when: never 
+
+
+Ansible-roles.Submodule.Deploy:
+  extends: .submodule_update_trigger
+  variables:
+    SUBMODULE_UPDATE_TRIGGER_PROJECT: nofusscomputing/projects/ansible-roles
