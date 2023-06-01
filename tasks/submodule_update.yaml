@@ -14,6 +14,7 @@
     repo_root: "{{ lookup('env', 'CI_PROJECT_DIR') }}"
     gitlab_job_number: "{{ lookup('env', 'CI_JOB_ID') }}"
     gitlab_job_url: "{{ lookup('env', 'CI_JOB_URL') }}"
+    gitlab_submodule_name: "{{ lookup('env', 'GIT_CONFIG_SUBMODULE_NAME') | default('') }}"
   when: lookup('env', 'CI') | default(false)
   no_log: true
 
@@ -29,6 +30,7 @@
     default_branch: "{{ role_git_conf.gitlab.default_branch | default(omit) }}"
     mr_labels: "{{ role_git_conf.gitlab.mr_labels | default(omit) }}"
     auto_merge: "{{ role_git_conf.gitlab.auto_merge | default(false) }}"
+    submodule_name: "{{ gitlab_submodule_name | default('') }}"
   when: lookup('env', 'CI') | default(false)
 
 
@@ -39,6 +41,7 @@
     merge_request_existing: ''
     merge_request_fetch: ''
     merge_request_create: ''
+    submodule_name: "{{ submodule_name | default('') }}"
     mr_title: "{{ 'chore(git): Automated update of git sub-modules' | urlencode }}"
 
 
@@ -84,6 +87,13 @@
 - name: submodule facts cleanup
   ansible.builtin.set_fact:
     submodules: "{{ submodules.stdout_lines | from_yaml }}"
+  when: submodule_name == ''
+
+
+- name: Sub Moduled Specified, use it!
+  ansible.builtin.set_fact:
+    submodules: "[ {{ submodule_name }} ]"
+  when: submodule_name != ''
 
 
 - name: check for existing automation branch
@@ -118,6 +128,8 @@
 
         {% for git_sub_module in submodules %}
 
+          {% if (submodule_name != '' and submodule_name == git_sub_module) or submodule_name == '' %}
+
           {
             "name": "{{ git_sub_module }}",
             "url": "$(cd {{ repo_root }}/{{ git_sub_module }} && git remote get-url --all origin)",
@@ -127,6 +139,8 @@
             "path": "{{ repo_root }}/{{ git_sub_module }}",
             "remote_name": "$(git remote)"
           },
+
+          {% endif %}
 
         {% endfor %}
 
