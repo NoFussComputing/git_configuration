@@ -42,4 +42,4 @@ Submodule.Integration.Test:
 Ansible-roles.Submodule.Deploy:
   extends: .submodule_update_trigger
   variables:
-    SUBMODULE_UPDATE_TRIGGER_PROJECT: nofusscomputing/projects/ansible-roles
+    SUBMODULE_UPDATE_TRIGGER_PROJECT: nofusscomputing/projects/ansible/ansible-roles
