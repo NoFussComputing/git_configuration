@@ -26,8 +26,9 @@ Submodule.Integration.Test:
     - rm -Rf /etc/ansible/roles/git_configuration
     - ls -la /etc/ansible/roles
   needs: []
-  rules:  
+  rules:
     - if: 
+        $CI_COMMIT_TAG == null &&
         $CI_PIPELINE_SOURCE == "push" && 
         $CI_COMMIT_BRANCH != 'master' &&
         $CI_COMMIT_BRANCH != 'development' &&
@@ -36,3 +37,9 @@ Submodule.Integration.Test:
         - ".nfc_automation.yaml"
       when: always
     - when: never 
+
+
+Ansible-roles.Submodule.Deploy:
+  extends: .submodule_update_trigger
+  variables:
+    SUBMODULE_UPDATE_TRIGGER_PROJECT: nofusscomputing/projects/ansible-roles
