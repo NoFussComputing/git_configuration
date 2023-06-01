@@ -16,6 +16,7 @@ This task is designed to automate the updating of your repositories git submodul
 
 | Name | default | description |
 |:---:| :---|:---|
+| `submodule_name` | *not defined* | ***Optional** If specified and matches the name of a git submodule, will **Only** update that module.* |
 | `submodule_branch` | *not defined* | ***Required** Branch to use for the git submodules.* |
 | `default_branch` | *not defined* | ***Required** Repositories default branch.* |
 | `mr_labels` | *not defined* | ***Required** Labels to add to the merge request, if created.* |
