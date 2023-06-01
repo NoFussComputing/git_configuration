@@ -178,6 +178,7 @@
         "only_allow_merge_if_all_discussions_are_resolved": "{{ item.item[1].only_allow_merge_if_all_discussions_are_resolved | default(true) | bool }}",
         "only_allow_merge_if_pipeline_succeeds": "{{ item.item[1].only_allow_merge_if_pipeline_succeeds | default(true) | bool }}",
         "packages_enabled": "{{ item.item[1].packages_enabled | default(false) | bool }}",
+        "pages_access_level": "{{ item.item[1].pages_access_level | default('disabled') }}",
         "releases_access_level": "{{ item.item[1].releases_access_level | default('disabled') }}",
         "remove_source_branch_after_merge": {{ item.item[1].remove_source_branch_after_merge | default(true) | bool }},
         "security_and_compliance_access_level": "{{ item.item[1].security_and_compliance_access_level | default('disabled') }}",
