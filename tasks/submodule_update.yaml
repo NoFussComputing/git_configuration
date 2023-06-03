@@ -95,7 +95,7 @@
   ansible.builtin.shell: >
     echo {{ submodule_name }}
   register: submodule_specified
-  failed_when: submodules.rc > 0 or submodules.stderr_lines|length > 0
+  failed_when: submodule_specified.rc|int > 0 or submodule_specified.stderr_lines|length > 0
   changed_when: "'never' == 'changes'"
   when: submodule_name != ''
 
@@ -359,7 +359,7 @@
   with_items: "{{ update_submodules.results }}"
   when: item.changed
   register: changes_commited
-  failed_when: changes_commited.rc != 0
+  failed_when: changes_commited.stderr_lines|default(0)|length|int > 0
 
 
 - name: Push Changes to remote
