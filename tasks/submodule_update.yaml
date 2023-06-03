@@ -95,7 +95,7 @@
   ansible.builtin.shell: >
     echo {{ submodule_name }}
   register: submodule_specified
-  failed_when: submodules.rc > 0 or submodules.stderr_lines|length > 0
+  failed_when: submodule_specified.rc > 0 or submodule_specified.stderr_lines|length > 0
   changed_when: "'never' == 'changes'"
   when: submodule_name != ''
 
