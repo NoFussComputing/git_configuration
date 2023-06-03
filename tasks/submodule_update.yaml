@@ -651,6 +651,12 @@
   no_log: true
 
 
+- name: DEBUG - Failed Merge Request Comment
+  ansible.builtin.debug:
+    msg: "{{ merge_request_comment.json | from_yaml }}"
+  when: merge_request_comment.json|default('') != ''
+
+
 - ansible.builtin.debug:
     msg:
       - submodules: "{{ submodules }}"
