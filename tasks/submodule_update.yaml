@@ -524,15 +524,15 @@
 - name: Generate Merge Request comment (no changes)
   ansible.builtin.set_fact:
     mr_comment: |
-      {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged. :white_check_mark:{% else%}won't be merged as part of this automation. :red_circle:{% endif %}
+      {% raw %}This automated job has auto_merge={{ auto_merge | default('') | string }}, As such this merge request {% if auto_merge %}will be merged. :white_check_mark:{% else%}won't be merged as part of this automation. :red_circle:{% endif %}
 
 
       :no_entry: There were **no changes** to commit.
 
 
-      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number }}]({{ gitlab_job_url }}){% endif %}
+      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number | default('') }}]({{ gitlab_job_url | default('') }}){% endif %}
 
-      {{ merge_request_approval_comment }}
+      {{ merge_request_approval_comment | default('') }}
 
       /spend {{ task_duration_ansible }}s
       {% endraw %}
