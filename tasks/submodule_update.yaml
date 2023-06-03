@@ -82,6 +82,7 @@
   register: submodules
   failed_when: submodules.rc > 0 or submodules.stderr_lines|length > 0
   changed_when: "'never' == 'changes'"
+  when: submodule_name == ''
 
 
 - name: submodule facts cleanup
@@ -91,8 +92,17 @@
 
 
 - name: Sub Moduled Specified, use it!
+  ansible.builtin.shell: >
+    echo {{ submodule_name }}
+  register: submodule_specified
+  failed_when: submodules.rc > 0 or submodules.stderr_lines|length > 0
+  changed_when: "'never' == 'changes'"
+  when: submodule_name != ''
+
+
+- name: submodule facts cleanup
   ansible.builtin.set_fact:
-    submodules: "[ {{ submodule_name }} ]"
+    submodules: "{{ submodule_specified.stdout_lines | from_yaml }}"
   when: submodule_name != ''
 
 
