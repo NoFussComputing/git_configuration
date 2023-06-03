@@ -58,7 +58,7 @@
 
 - name: Clone Repository to default branch
   ansible.builtin.command:
-    cmd: "git clone --origin automation -b {{ default_branch }} --depth=100 https://gitlab-ci-token:{{ api_token }}@gitlab.com/{{ project_path }}.git {{ repo_root }}"
+    cmd: "git clone --origin automation -b {{ default_branch }} https://gitlab-ci-token:{{ api_token }}@gitlab.com/{{ project_path }}.git {{ repo_root }}"
   register: git_clone
   failed_when: git_clone.rc > 0
   changed_when: "'never' == 'changes'"
