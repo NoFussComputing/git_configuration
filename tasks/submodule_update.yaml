@@ -334,7 +334,7 @@
   ansible.builtin.command:
     cmd: "git switch {{ automation_branch }}"
     chdir: "{{ repo_root }}"
-  when: "existing_branch.rc == 1"
+  when: existing_branch.rc|int == 1
   register: switch_to_automation_branch
   failed_when: "switch_to_automation_branch.rc > 0"
 
