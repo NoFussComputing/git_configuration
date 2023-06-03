@@ -82,6 +82,7 @@
   register: submodules
   failed_when: submodules.rc > 0 or submodules.stderr_lines|length > 0
   changed_when: "'never' == 'changes'"
+  when: submodule_name == ''
 
 
 - name: submodule facts cleanup
@@ -91,8 +92,17 @@
 
 
 - name: Sub Moduled Specified, use it!
+  ansible.builtin.shell: >
+    echo {{ submodule_name }}
+  register: submodule_specified
+  failed_when: submodules.rc > 0 or submodules.stderr_lines|length > 0
+  changed_when: "'never' == 'changes'"
+  when: submodule_name != ''
+
+
+- name: submodule facts cleanup
   ansible.builtin.set_fact:
-    submodules: "[ {{ submodule_name }} ]"
+    submodules: "{{ submodule_specified.stdout_lines | from_yaml }}"
   when: submodule_name != ''
 
 
@@ -324,7 +334,7 @@
   ansible.builtin.command:
     cmd: "git switch {{ automation_branch }}"
     chdir: "{{ repo_root }}"
-  when: "existing_branch.rc == 1"
+  when: existing_branch.rc|int == 1
   register: switch_to_automation_branch
   failed_when: "switch_to_automation_branch.rc > 0"
 
@@ -514,15 +524,15 @@
 - name: Generate Merge Request comment (no changes)
   ansible.builtin.set_fact:
     mr_comment: |
-      {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged. :white_check_mark:{% else%}won't be merged as part of this automation. :red_circle:{% endif %}
+      {% raw %}This automated job has auto_merge={{ auto_merge | default('') | string }}, As such this merge request {% if auto_merge %}will be merged. :white_check_mark:{% else%}won't be merged as part of this automation. :red_circle:{% endif %}
 
 
       :no_entry: There were **no changes** to commit.
 
 
-      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number }}]({{ gitlab_job_url }}){% endif %}
+      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number | default('') }}]({{ gitlab_job_url | default('') }}){% endif %}
 
-      {{ merge_request_approval_comment }}
+      {{ merge_request_approval_comment | default('') }}
 
       /spend {{ task_duration_ansible }}s
       {% endraw %}
