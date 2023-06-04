@@ -138,6 +138,7 @@
 
 - name: Generate Play Config
   ansible.builtin.shell: |
+    cd {{ repo_root }};
     echo $(echo `cat <<EOF
     {
       "gitmodules": [
@@ -148,12 +149,12 @@
 
           {
             "name": "{{ git_sub_module }}",
-            "url": "$(cd {{ repo_root }}/{{ git_sub_module }} && git remote get-url --all origin)",
+            "url": "$(cd $(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}') && git remote get-url --all origin && cd {{ repo_root }})",
             "branch": "{{ submodule_branch }}",
-            "current_commit": "$(cd {{ repo_root }}/{{ git_sub_module }} && git reset --hard > /dev/null && git log -1 --format=format:'%H')",
-            "remote_head": "$(cd {{ repo_root }}/{{ git_sub_module }} && git fetch --all > /dev/null && git log origin/{{ submodule_branch }} -1 --format=format:'%H')",
-            "path": "{{ repo_root }}/{{ git_sub_module }}",
-            "remote_name": "$(git remote)"
+            "current_commit": "$(cd $(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}') && git reset --hard > /dev/null && git log -1 --format=format:'%H' && cd {{ repo_root }}))",
+            "remote_head": "$(cd $(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}') && git fetch --all > /dev/null && git log origin/{{ submodule_branch }} -1 --format=format:'%H' && cd {{ repo_root }}))",
+            "path": "{{ repo_root }}/$(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}')",
+            "remote_name": "$(cd $(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}') && git remote && cd {{ repo_root }})"
           },
 
           {% endif %}
