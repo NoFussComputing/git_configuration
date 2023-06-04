@@ -42,8 +42,13 @@
     merge_request_fetch: ''
     merge_request_create: ''
     submodule_name: "{{ submodule_name | default('') }}"
-    mr_title: "{{ 'chore(git): Automated update of git sub-modules' | urlencode }}"
+    mr_title: "{% if submodule_name | default('') == '' %}chore(git): Automated update of git sub-modules{% else %}chore({{ submodule_name | default('') }}): Automated update of git sub-module{% endif %}"
 
+
+- name: URL encode mr_title
+  ansible.builtin.set_fact:
+    mr_title: "{{ mr_title | urlencode }}"
+  
 
 - name: Create folder for git clone
   ansible.builtin.command:
