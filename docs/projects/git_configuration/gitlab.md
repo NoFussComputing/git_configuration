@@ -10,6 +10,9 @@ about: https://gitlab.com/nofusscomputing/projects/ansible/git_configuration
     This documentation is still a work in progress
 
 
+Like the [Github Repository](github.md) featureof this ansible role, you can manage the full lifecycle of your Gitlab repository. Running this role from the CLI includes the gitlab management, however if you wish to manage your Gitlab repositories only, use the `--tags` arg with a value of `gitlab` 
+
+
 ## Docs ToDo
 
 - notate name is for the human readable name for the repo
