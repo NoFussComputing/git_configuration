@@ -1,5 +1,5 @@
 ---
-title: Configure Git from code
+title: Git repository management from code
 description: How to use No Fuss Computings Ansible role git configuration; to setup your git repositories in Gitlab and Github from config as code.
 date: 2023-05-26
 template: project.html
@@ -23,7 +23,8 @@ This Ansible role has been designed to enable you to place git related settings 
 
 Regardless of the repository type Gitlab/Github, the features are intended to use a common configuration layout with the role designed to interperate this to each different system.
 
-**Common to both Gitlab/Github**
+
+### Common to both Gitlab/Github
 
 - Create a repository
 
@@ -36,7 +37,8 @@ Regardless of the repository type Gitlab/Github, the features are intended to us
 
 - Topics management - *Currently only for Gitlab, Github planned*
 
-**Gitlab Only**
+
+### Gitlab features
 
 - Avatar - *(currently only supporting adding on repository creation)*
 
