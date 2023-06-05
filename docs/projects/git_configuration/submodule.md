@@ -1,6 +1,6 @@
 ---
-title: Repository automated git submodule updates
-description: How to use No Fuss Computings Ansible role git configuration tagged task, git submodules.
+title: Automated repository git submodule updating
+description: How to use No Fuss Computings Ansible role git configuration tagged task, git submodules to update your repositories git submodules.
 date: 2023-05-26
 template: project.html
 about: https://gitlab.com/nofusscomputing/projects/ansible/git_configuration
