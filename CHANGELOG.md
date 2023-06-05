@@ -1,3 +1,16 @@
+## 0.4.0rc1 (2023-06-05)
+
+### Bug Fixes
+
+- **gitlab**: [d5ba76e9](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/d5ba76e9ffad43a6a423fdfe356f277ad0f6ee16) - correct creation path variable expansion [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) ]
+- **submodule**: [0da3f29a](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/0da3f29a9f318201cb4e2f1862b43305113a2e79) - use .gitmodules to fetch path [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) ]
+- **submodule**: [31a00693](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/31a006936f2a25c918356e96180d2000b5ac2000) - look for approvers in the correct location [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) [!15](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/15) ]
+
+### Features
+
+- **submodule**: [5dfe8444](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/5dfe84443955248e425d68963bd0185a99e568d2) - oadjust MR title to reflect specified module name [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) ]
+- **submodule**: [e294e27d](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/e294e27d10526418c2794eb5fea8cc3a79f94818) - output failed mr comment api call [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) ]
+
 ## 0.4.0rc0 (2023-06-03)
 
 ### Bug Fixes
