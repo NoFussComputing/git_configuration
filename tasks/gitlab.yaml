@@ -25,7 +25,7 @@
     merge_method: "{{ item[1].merge_method | default('merge') }}"  # defined as this module sets otherwise
     merge_requests_enabled: "{{ item[1].merge_requests_enabled | default(true) | bool }}" # defined as this module sets otherwise
     name: "{{ item[1].name }}"
-    path: "{{ item[1].path | item[1].name | replace(' ', '_') | lower }}"
+    path: "{% if item[1].path is defined %}{{ item[1].path | replace(' ', '_') | lower }}{% else %}{{item[1].name | replace(' ', '_') | lower }}{% endif %}"
     snippets_enabled: "{{ item[1].snippets_enabled | default(false) | bool }}" # defined as this module sets otherwise
     state: "{{ item[1].state | default('present') }}"
     username: "{{ item[1].username | default(omit) }}"
