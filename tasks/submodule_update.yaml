@@ -481,7 +481,7 @@
       {% if merge_request_approved|bool %}. However this MR is already approved. :white_check_mark:{% endif%}
       {% if not merge_request_approved|bool %} {% if merge_request_user_can_approve|bool %}{% if not merge_request_approval_require_password|bool%}, to which I have the required permissions to do so. :white_check_mark:{% else %}to which I have the required permissions to do so, however don't have any thumbs to enter a password as is required for approving a Merge request. :red_circle:{% endif %}{% else %}to which I don't have the required permissions to do so. :red_circle:
 
-      :construction: /cc {% for approval_user in merge_request_approvals.suggested_approvers %}@{{approval_user.user.username}}  {% endfor %}, Please review and approve.{% endif %}{% endif %}
+      :construction: /cc {% for approval_user in merge_request_approvals.suggested_approvers %}@{{approval_user.username}}  {% endfor %}, Please review and approve.{% endif %}{% endif %}
       {% else %}This Merge request does not require approval. :white_check_mark:{% endif%}
       {% endraw%}
 
