@@ -593,7 +593,12 @@
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
-  when: merge_request_id|default('not found') != 'not found' and auto_merge
+  when: >
+    merge_request_id|default('not found') != 'not found'
+      and 
+    auto_merge
+      and 
+    merge_request_user_can_approve|default(true)|bool
   register: merge_the_merge_request
   no_log: true
 
