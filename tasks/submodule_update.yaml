@@ -593,9 +593,20 @@
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
-  when: merge_request_id|default('not found') != 'not found' and auto_merge
+  when: >
+    merge_request_id|default('not found') != 'not found'
+      and 
+    auto_merge
+      and 
+    merge_request_user_can_approve|default(true)|bool
   register: merge_the_merge_request
   no_log: true
+
+
+- name: DEBUG - Merge the Merge Request return
+  ansible.builtin.debug:
+    msg: "{{ merge_the_merge_request.json | default('') | from_yaml }}"
+  when: merge_request_id|default('not found') != 'not found' and auto_merge
 
 
 - name: generate comment for unable to merge
@@ -604,44 +615,58 @@
       {% raw %}
       I'm unabe to merge!!
       
-      When I tried '{{ merge_the_merge_request.json.message }}' was returned
+      When I tried '{{ merge_the_merge_request.json.message | default('') }}' was returned
 
       <details>
       <summary>Debug Information</summary>
 
       Existing MR
       ```json
-      {{ merge_request_existing | to_nice_json }}
+      {{ merge_request_existing | default('') | to_nice_json }}
       ```
 
       Create Merge Request
       ```json
-      {{ merge_request_create | to_nice_json }}
+      {{ merge_request_create | default('') | to_nice_json }}
       ```
       - *push changes if any*
       - *Pause for 20 Seconds*
 
       Fetch merge request
       ```json
-      {{ merge_request_fetch | to_nice_json }}
+      {{ merge_request_fetch | default('') | to_nice_json }}
       ```
 
       Fetch Approvals
       ```json
-      {{ merge_request_approvals_fetch | to_nice_json }}
+      {{ merge_request_approvals_fetch | default('') | to_nice_json }}
       ```
 
       Approve MR
       ```json
-      {{ merge_request_approvals_approve | to_nice_json }}
+      {{ merge_request_approvals_approve | default('') | to_nice_json }}
       ```
 
       sub module details:
       ```json
-      {{ playconfig | to_nice_json }}
+      {{ playconfig | default('') | to_nice_json }}
 
       ```
 
+      Merge the Merge Request return:
+      ``` json
+      {{ merge_the_merge_request.json | default('') }}
+      ```
+
+      other facts:
+      ```json
+      "ansible_facts": {
+        "merge_request_approval_require_password": {{ merge_request_approval_require_password | default('') }},
+        "merge_request_approved": {{ merge_request_approved | default('') }},
+        "merge_request_needs_approval": {{ merge_request_needs_approval | default('') }},
+        "merge_request_user_can_approve": {{ merge_request_user_can_approve | default('') }}
+      }
+      ```
       </details>
       
       /spend 10s
@@ -661,7 +686,7 @@
       body: "{{ merge_fail_comment }}"
   when: >
     merge_request_id|default('not found') != 'not found' and auto_merge|bool and 
-    merge_the_merge_request.status|int > 400
+    merge_the_merge_request.status|default(0)|int > 400
   register: merge_request_comment
   no_log: true
 
