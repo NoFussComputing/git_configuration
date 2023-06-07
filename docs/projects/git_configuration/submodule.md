@@ -9,7 +9,7 @@ about: https://gitlab.com/nofusscomputing/projects/ansible/git_configuration
 !!! Note
     This documentation is still a work in progress
 
-This task is designed to automate the updating of your repositories git submodules. Currently it supports being run from CLI or within the Gitlab CI/CD environment. to specifically run this group of tasks define the tag `--tags submodule`
+This task is designed to automate the updating of your repositories git submodules. Currently it supports being run from CLI or within the Gitlab CI/CD environment. To specifically run this group of tasks define the tag `--tags submodule`. Another feature of this role, even though we try to compensate/correct errors during the play, is that if any task fails for whatever reason-Run the play again to resolve.
 
 
 ## Required Variables
