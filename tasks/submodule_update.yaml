@@ -239,6 +239,14 @@
   when: update_submodules.changed|default(false) and existing_branch.rc == 0
 
 
+- name: Init git submodules
+  ansible.builtin.command:
+    cmd: "git submodule update --init"
+    chdir: "{{ repo_root }}"
+  register: new_branch_git_init
+  when: update_submodules.changed|default(false) and existing_branch.rc == 0
+
+
 - name: push automation branch
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
