@@ -603,6 +603,12 @@
   no_log: true
 
 
+- name: DEBUG - Merge the Merge Request return
+  ansible.builtin.debug:
+    msg: "{{ merge_the_merge_request.json | default('') | from_yaml }}"
+  when: merge_request_id|default('not found') != 'not found' and auto_merge
+
+
 - name: generate comment for unable to merge
   ansible.builtin.set_fact:
     merge_fail_comment: |
@@ -652,6 +658,15 @@
       {{ merge_the_merge_request.json | default('') }}
       ```
 
+      other facts:
+      ```json
+      "ansible_facts": {
+        "merge_request_approval_require_password": {{ merge_request_approval_require_password | default('') }},
+        "merge_request_approved": {{ merge_request_approved | default('') }},
+        "merge_request_needs_approval": {{ merge_request_needs_approval | default('') }},
+        "merge_request_user_can_approve": {{ merge_request_user_can_approve | default('') }}
+      }
+      ```
       </details>
       
       /spend 10s
