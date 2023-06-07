@@ -130,7 +130,7 @@
     git fetch --all -fpv;
     git checkout --track automation/{{ automation_branch }};
     #git switch {{ automation_branch }} --force;
-    #git reset --recurse-submodule --hard
+    git submodule foreach git reset --hard
     # git log -3;
   register: pull_branch
   when: existing_branch.rc == 1
