@@ -374,7 +374,8 @@
   with_items: "{{ update_submodules.results }}"
   when: item.changed
   register: changes_commited
-  failed_when: changes_commited.rc != 0
+  failed_when: changes_commited.rc != 0 and 'nothing to commit, working tree clean' not in changes_commited.stdout_lines
+  changed_when: "'nothing to commit, working tree clean' not in changes_commited.stdout_lines"
 
 
 - name: Push Changes to remote
@@ -382,7 +383,7 @@
     cmd: "git push automation {{ automation_branch }}"
     chdir: "{{ repo_root }}"
   register: push_branch_changes
-  when: update_submodules.changed|default(false)
+  when: changes_commited.changed|default(false)
 
 
 - name: Pause for 20 seconds for gitlab to catchup
