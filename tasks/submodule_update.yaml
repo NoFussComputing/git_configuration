@@ -598,7 +598,19 @@
       and 
     auto_merge
       and 
-    merge_request_user_can_approve|default(true)|bool
+    (
+      (
+        merge_request_user_can_approve|default(true)|bool
+          and
+        merge_request_needs_approval|default(0)|int == 1
+          and
+        merge_request_approval_require_password|bool
+      )
+        or
+      merge_request_needs_approval|default(0)|int == 0
+        or
+      merge_request_approved|default(false)|bool
+    )
   register: merge_the_merge_request
   no_log: true
 
