@@ -220,6 +220,7 @@
     cmd: "git branch -a"
     chdir: "{{ repo_root }}"
   when: existing_branch.rc == 0
+  changed_when: "'never' == 'changes'"
 
 
 - name: Create automation branch
@@ -236,6 +237,7 @@
     chdir: "{{ repo_root }}"
   register: new_branch_git_init
   when: existing_branch.rc == 0
+  changed_when: "'never' == 'changes'"
 
 
 - name: Update submodule
