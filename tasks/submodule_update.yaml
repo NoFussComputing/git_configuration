@@ -70,7 +70,7 @@
   no_log: true
 
 
-- name: Update git submodules initialization
+- name: Update git submodules init default branch
   ansible.builtin.shell: >
     cd {{ repo_root }};
     git fetch --all;
@@ -123,15 +123,16 @@
 
 
 
-- name: Pull existing automation branch and switch
+- name: Pull existing automation branch, switch and init submodules
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
     git remote -v;
     git fetch --all -fpv;
     git checkout --track automation/{{ automation_branch }};
     #git switch {{ automation_branch }} --force;
-    git submodule foreach git reset --hard
-    # git log -3;
+    git submodule foreach git reset --hard;
+    git submodule update --init;
+    git status;
   register: pull_branch
   when: existing_branch.rc == 1
 
@@ -185,16 +186,6 @@
   failed_when: update_submodule_branch.rc != 0
 
 
-- name: Update submodule
-  ansible.builtin.command:
-    cmd: "git submodule update --remote {{ item.path }}"
-    chdir: "{{ repo_root }}"
-  register: update_submodules
-  with_items: "{{ playconfig.gitmodules }}"
-  when: "item.current_commit != item.remote_head"
-  failed_when: update_submodules.rc != 0
-
-
 - name: Check for existing Merge Request
   ansible.builtin.uri:
     url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?state=opened&source_branch={{ automation_branch }}&target_branch={{ default_branch }}"
@@ -228,7 +219,7 @@
   ansible.builtin.command:
     cmd: "git branch -a"
     chdir: "{{ repo_root }}"
-  when: update_submodules.changed|default(false) and existing_branch.rc == 0
+  when: existing_branch.rc == 0
 
 
 - name: Create automation branch
@@ -236,7 +227,7 @@
     cmd: "git checkout -b {{ automation_branch }} automation/{{ default_branch }}"
     chdir: "{{ repo_root }}"
   register: new_branch
-  when: update_submodules.changed|default(false) and existing_branch.rc == 0
+  when: existing_branch.rc == 0
 
 
 - name: Init git submodules
@@ -244,7 +235,17 @@
     cmd: "git submodule update --init"
     chdir: "{{ repo_root }}"
   register: new_branch_git_init
-  when: update_submodules.changed|default(false) and existing_branch.rc == 0
+  when: existing_branch.rc == 0
+
+
+- name: Update submodule
+  ansible.builtin.command:
+    cmd: "git submodule update --remote {{ item.path }}"
+    chdir: "{{ repo_root }}"
+  register: update_submodules
+  with_items: "{{ playconfig.gitmodules }}"
+  when: "item.current_commit != item.remote_head"
+  failed_when: update_submodules.rc != 0
 
 
 - name: push automation branch
@@ -358,7 +359,7 @@
   ansible.builtin.command:
     cmd: "git status"
     chdir: "{{ repo_root }}"
-  register: git_status
+  register: git_status_commit_prior
 
 
 - name: Stage Changes for commit
@@ -670,6 +671,11 @@
       ```json
       {{ playconfig | default('') | to_nice_json }}
 
+      ```
+
+      Git Status, prior to `git add` and `git commit`
+      ``` text
+      {{ git_status_commit_prior.stdout | default ('') }}
       ```
 
       Merge the Merge Request return:
