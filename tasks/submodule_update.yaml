@@ -354,6 +354,13 @@
   failed_when: "switch_to_automation_branch.rc > 0"
 
 
+- name: DEBUG - git status
+  ansible.builtin.command:
+    cmd: "git status"
+    chdir: "{{ repo_root }}"
+  register: git_status
+
+
 - name: Stage Changes for commit
   ansible.builtin.command:
     cmd: "git add {{ item.item.path }}"
