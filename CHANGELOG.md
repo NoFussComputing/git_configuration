@@ -1,3 +1,23 @@
+## 0.4.0 (2023-06-15)
+
+### Bug Fixes
+
+- **submodule**: [d161ae40](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/d161ae40aa5208a4cd8c3156cc8d8555fd98e93c) - don't push branch if there are no changes [ [!94](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/94) [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **submodule**: [75b2d6c5](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/75b2d6c5155909a307ba2fb93796abc8df7e7506) - debug item don't change [ [!87](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/87) ]
+- **submodule**: [76dd7451](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/76dd7451dee28d9a80c4ee2b379faf9bba53b74b) - correct workflow for git submodule update [ [!87](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/87) ]
+- **submodule**: [2167217a](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/2167217a9091ca59bfb84fbfb32a16cda9ad2702) - correct workflow for git submodule update [ [!79](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/79) [!55](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/55) ]
+- **submodule**: [caa7acee](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/caa7aceec15464c00ea307023535d2794903e081) - if no approval required enable merging [ [!79](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/79) [!40](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/40) ]
+- **submodule**: [2e8961d4](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/2e8961d4d1a50c3eea63d301bc8b6f1a5749e8c7) - check if user can approve [ [!78](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/78) ]
+
+### Code Refactor
+
+- **submodule**: [e7dfcfee](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/e7dfcfee03ab03a066a0afb8a78c99f625142df3) - default to empty jina value [ [!78](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/78) ]
+
+### Features
+
+- **submodule**: [d7e721a8](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/d7e721a815537975abf28c2a4e33b4193f5f5a82) - debug output git status prior to commit [ [!79](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/79) ]
+- **submodule**: [d9b29cea](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/d9b29cea0b627c27a5a610bc6ec838876ff465cd) - additional debug output [ [!78](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/78) ]
+
 ## 0.4.0rc2 (2023-06-07)
 
 ### Bug Fixes
