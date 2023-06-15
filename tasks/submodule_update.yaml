@@ -269,11 +269,7 @@
   when: >
     existing_branch.rc == 0 
       and 
-    (
-      new_branch.changed|bool
-        or 
-      update_submodules.changed|bool
-    )
+    update_submodules.changed|bool
   failed_when: push_automation_branch.rc != 0
   register: push_automation_branch
 
