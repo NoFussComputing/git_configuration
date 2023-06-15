@@ -1,6 +1,6 @@
 ---
-title: Repository automated git submodule updates
-description: How to use No Fuss Computings Ansible role git configuration tagged task, git submodules.
+title: Automated repository git submodule updating
+description: How to use No Fuss Computings Ansible role git configuration tagged task, git submodules to update your repositories git submodules.
 date: 2023-05-26
 template: project.html
 about: https://gitlab.com/nofusscomputing/projects/ansible/git_configuration
@@ -9,13 +9,14 @@ about: https://gitlab.com/nofusscomputing/projects/ansible/git_configuration
 !!! Note
     This documentation is still a work in progress
 
-This task is designed to automate the updating of your repositories git submodules. Currently it supports being run from CLI or within the Gitlab CI/CD environment. to specifically run this group of tasks define the tag `--tags submodule`
+This task is designed to automate the updating of your repositories git submodules. Currently it supports being run from CLI or within the Gitlab CI/CD environment. To specifically run this group of tasks define the tag `--tags submodule`. Another feature of this role, even though we try to compensate/correct errors during the play, is that if any task fails for whatever reason-Run the play again to resolve.
 
 
 ## Required Variables
 
 | Name | default | description |
 |:---:| :---|:---|
+| `submodule_name` | *not defined* | ***Optional** If specified and matches the name of a git submodule, will **Only** update that module.* |
 | `submodule_branch` | *not defined* | ***Required** Branch to use for the git submodules.* |
 | `default_branch` | *not defined* | ***Required** Repositories default branch.* |
 | `mr_labels` | *not defined* | ***Required** Labels to add to the merge request, if created.* |

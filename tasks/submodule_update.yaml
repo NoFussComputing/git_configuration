@@ -14,6 +14,7 @@
     repo_root: "{{ lookup('env', 'CI_PROJECT_DIR') }}"
     gitlab_job_number: "{{ lookup('env', 'CI_JOB_ID') }}"
     gitlab_job_url: "{{ lookup('env', 'CI_JOB_URL') }}"
+    gitlab_submodule_name: "{{ lookup('env', 'GIT_CONFIG_SUBMODULE_NAME') | default('') }}"
   when: lookup('env', 'CI') | default(false)
   no_log: true
 
@@ -29,6 +30,7 @@
     default_branch: "{{ role_git_conf.gitlab.default_branch | default(omit) }}"
     mr_labels: "{{ role_git_conf.gitlab.mr_labels | default(omit) }}"
     auto_merge: "{{ role_git_conf.gitlab.auto_merge | default(false) }}"
+    submodule_name: "{{ gitlab_submodule_name | default('') }}"
   when: lookup('env', 'CI') | default(false)
 
 
@@ -39,8 +41,14 @@
     merge_request_existing: ''
     merge_request_fetch: ''
     merge_request_create: ''
-    mr_title: "{{ 'chore(git): Automated update of git sub-modules' | urlencode }}"
+    submodule_name: "{{ submodule_name | default('') }}"
+    mr_title: "{% if submodule_name | default('') == '' %}chore(git): Automated update of git sub-modules{% else %}chore({{ submodule_name | default('') }}): Automated update of git sub-module{% endif %}"
 
+
+- name: URL encode mr_title
+  ansible.builtin.set_fact:
+    mr_title: "{{ mr_title | urlencode }}"
+  
 
 - name: Create folder for git clone
   ansible.builtin.command:
@@ -55,14 +63,14 @@
 
 - name: Clone Repository to default branch
   ansible.builtin.command:
-    cmd: "git clone --origin automation -b {{ default_branch }} --depth=100 https://gitlab-ci-token:{{ api_token }}@gitlab.com/{{ project_path }}.git {{ repo_root }}"
+    cmd: "git clone --origin automation -b {{ default_branch }} https://gitlab-ci-token:{{ api_token }}@gitlab.com/{{ project_path }}.git {{ repo_root }}"
   register: git_clone
   failed_when: git_clone.rc > 0
   changed_when: "'never' == 'changes'"
   no_log: true
 
 
-- name: Update git submodules initialization
+- name: Update git submodules init default branch
   ansible.builtin.shell: >
     cd {{ repo_root }};
     git fetch --all;
@@ -79,11 +87,28 @@
   register: submodules
   failed_when: submodules.rc > 0 or submodules.stderr_lines|length > 0
   changed_when: "'never' == 'changes'"
+  when: submodule_name == ''
 
 
 - name: submodule facts cleanup
   ansible.builtin.set_fact:
     submodules: "{{ submodules.stdout_lines | from_yaml }}"
+  when: submodule_name == ''
+
+
+- name: Sub Moduled Specified, use it!
+  ansible.builtin.shell: >
+    echo {{ submodule_name }}
+  register: submodule_specified
+  failed_when: submodule_specified.rc > 0 or submodule_specified.stderr_lines|length > 0
+  changed_when: "'never' == 'changes'"
+  when: submodule_name != ''
+
+
+- name: submodule facts cleanup
+  ansible.builtin.set_fact:
+    submodules: "{{ submodule_specified.stdout_lines | from_yaml }}"
+  when: submodule_name != ''
 
 
 - name: check for existing automation branch
@@ -98,35 +123,42 @@
 
 
 
-- name: Pull existing automation branch and switch
+- name: Pull existing automation branch, switch and init submodules
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
-    # git fetch --all;
+    git remote -v;
+    git fetch --all -fpv;
     git checkout --track automation/{{ automation_branch }};
     #git switch {{ automation_branch }} --force;
-    #git reset --recurse-submodule --hard
-    # git log -3;
+    git submodule foreach git reset --hard;
+    git submodule update --init;
+    git status;
   register: pull_branch
   when: existing_branch.rc == 1
 
 
 - name: Generate Play Config
   ansible.builtin.shell: |
+    cd {{ repo_root }};
     echo $(echo `cat <<EOF
     {
       "gitmodules": [
 
         {% for git_sub_module in submodules %}
 
+          {% if (submodule_name != '' and submodule_name == git_sub_module) or submodule_name == '' %}
+
           {
             "name": "{{ git_sub_module }}",
-            "url": "$(cd {{ repo_root }}/{{ git_sub_module }} && git remote get-url --all origin)",
+            "url": "$(cd $(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}') && git remote get-url --all origin && cd {{ repo_root }})",
             "branch": "{{ submodule_branch }}",
-            "current_commit": "$(cd {{ repo_root }}/{{ git_sub_module }} && git reset --hard > /dev/null && git log -1 --format=format:'%H')",
-            "remote_head": "$(cd {{ repo_root }}/{{ git_sub_module }} && git fetch --all > /dev/null && git log origin/{{ submodule_branch }} -1 --format=format:'%H')",
-            "path": "{{ repo_root }}/{{ git_sub_module }}",
-            "remote_name": "$(git remote)"
+            "current_commit": "$(cd $(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}') && git reset --hard > /dev/null && git log -1 --format=format:'%H' && cd {{ repo_root }}))",
+            "remote_head": "$(cd $(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}') && git fetch --all > /dev/null && git log origin/{{ submodule_branch }} -1 --format=format:'%H' && cd {{ repo_root }}))",
+            "path": "{{ repo_root }}/$(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}')",
+            "remote_name": "$(cd $(git submodule foreach --quiet 'echo $name\__$path' | grep -a '{{ git_sub_module }}' | awk 'BEGIN{FS="__"} {print $2}') && git remote && cd {{ repo_root }})"
           },
+
+          {% endif %}
 
         {% endfor %}
 
@@ -146,22 +178,12 @@
 
 - name: Update set sub-module branch
   ansible.builtin.command:
-    cmd: "git submodule set-branch --branch {{ item.branch }} {{ item.name }}"
+    cmd: "git submodule set-branch --branch {{ item.branch }} {{ item.path }}"
     chdir: "{{ repo_root }}"
   register: update_submodule_branch
   with_items: "{{ playconfig.gitmodules }}"
   when: "item.current_commit != item.remote_head"
   failed_when: update_submodule_branch.rc != 0
-
-
-- name: Update submodule
-  ansible.builtin.command:
-    cmd: "git submodule update --init --remote {{ item.name }}"
-    chdir: "{{ repo_root }}"
-  register: update_submodules
-  with_items: "{{ playconfig.gitmodules }}"
-  when: "item.current_commit != item.remote_head"
-  failed_when: update_submodules.rc != 0
 
 
 - name: Check for existing Merge Request
@@ -174,13 +196,14 @@
       PRIVATE-TOKEN: "{{ api_token }}"
   register: existing_merge_request
   failed_when: "'never' == 'fail'"
+  changed_when: existing_merge_request.json|length|int > 0
   no_log: true
 
 
 - name: DEBUG - Existing Merge request return_content
   ansible.builtin.debug:
-    msg: "{{ existing_merge_request.json[0] | from_yaml }}"
-  when: existing_merge_request.json|default('')|length > 0
+    msg: "{{ existing_merge_request.json | from_yaml }}"
+  when: existing_merge_request.json|default('') != ''
 
 
 - name: Set Existing MR ID if exists
@@ -196,7 +219,8 @@
   ansible.builtin.command:
     cmd: "git branch -a"
     chdir: "{{ repo_root }}"
-  when: update_submodules.changed|default(false) and existing_branch.rc == 0
+  when: existing_branch.rc == 0
+  changed_when: "'never' == 'changes'"
 
 
 - name: Create automation branch
@@ -204,7 +228,26 @@
     cmd: "git checkout -b {{ automation_branch }} automation/{{ default_branch }}"
     chdir: "{{ repo_root }}"
   register: new_branch
-  when: update_submodules.changed|default(false) and existing_branch.rc == 0
+  when: existing_branch.rc == 0
+
+
+- name: Init git submodules
+  ansible.builtin.command:
+    cmd: "git submodule update --init"
+    chdir: "{{ repo_root }}"
+  register: new_branch_git_init
+  when: existing_branch.rc == 0
+  changed_when: "'never' == 'changes'"
+
+
+- name: Update submodule
+  ansible.builtin.command:
+    cmd: "git submodule update --remote {{ item.path }}"
+    chdir: "{{ repo_root }}"
+  register: update_submodules
+  with_items: "{{ playconfig.gitmodules }}"
+  when: "item.current_commit != item.remote_head"
+  failed_when: update_submodules.rc != 0
 
 
 - name: push automation branch
@@ -223,7 +266,10 @@
     
   args:
     executable: bash
-  when: existing_branch.rc == 0 and new_branch.changed
+  when: >
+    existing_branch.rc == 0 
+      and 
+    update_submodules.changed|bool
   failed_when: push_automation_branch.rc != 0
   register: push_automation_branch
 
@@ -309,14 +355,21 @@
   ansible.builtin.command:
     cmd: "git switch {{ automation_branch }}"
     chdir: "{{ repo_root }}"
-  when: "existing_branch.rc == 1"
+  when: existing_branch.rc|int == 1
   register: switch_to_automation_branch
   failed_when: "switch_to_automation_branch.rc > 0"
 
 
+- name: DEBUG - git status
+  ansible.builtin.command:
+    cmd: "git status"
+    chdir: "{{ repo_root }}"
+  register: git_status_commit_prior
+
+
 - name: Stage Changes for commit
   ansible.builtin.command:
-    cmd: "git add {{ item.item.name }}"
+    cmd: "git add {{ item.item.path }}"
     chdir: "{{ repo_root }}"
   with_items: "{{ update_submodules.results }}"
   when: item.changed
@@ -334,7 +387,8 @@
   with_items: "{{ update_submodules.results }}"
   when: item.changed
   register: changes_commited
-  failed_when: changes_commited.rc != 0
+  failed_when: changes_commited.rc != 0 and 'nothing to commit, working tree clean' not in changes_commited.stdout_lines
+  changed_when: "'nothing to commit, working tree clean' not in changes_commited.stdout_lines"
 
 
 - name: Push Changes to remote
@@ -342,7 +396,7 @@
     cmd: "git push automation {{ automation_branch }}"
     chdir: "{{ repo_root }}"
   register: push_branch_changes
-  when: update_submodules.changed|default(false)
+  when: changes_commited.changed|default(false)
 
 
 - name: Pause for 20 seconds for gitlab to catchup
@@ -449,7 +503,7 @@
       {% if merge_request_approved|bool %}. However this MR is already approved. :white_check_mark:{% endif%}
       {% if not merge_request_approved|bool %} {% if merge_request_user_can_approve|bool %}{% if not merge_request_approval_require_password|bool%}, to which I have the required permissions to do so. :white_check_mark:{% else %}to which I have the required permissions to do so, however don't have any thumbs to enter a password as is required for approving a Merge request. :red_circle:{% endif %}{% else %}to which I don't have the required permissions to do so. :red_circle:
 
-      :construction: /cc {% for approval_user in merge_request_approvals.approvers %}@{{approval_user.user.username}}  {% endfor %}, Please review and approve.{% endif %}{% endif %}
+      :construction: /cc {% for approval_user in merge_request_approvals.suggested_approvers %}@{{approval_user.username}}  {% endfor %}, Please review and approve.{% endif %}{% endif %}
       {% else %}This Merge request does not require approval. :white_check_mark:{% endif%}
       {% endraw%}
 
@@ -499,15 +553,15 @@
 - name: Generate Merge Request comment (no changes)
   ansible.builtin.set_fact:
     mr_comment: |
-      {% raw %}This automated job has auto_merge={{ auto_merge | string }}, As such this merge request {% if auto_merge %}will be merged. :white_check_mark:{% else%}won't be merged as part of this automation. :red_circle:{% endif %}
+      {% raw %}This automated job has auto_merge={{ auto_merge | default('') | string }}, As such this merge request {% if auto_merge %}will be merged. :white_check_mark:{% else%}won't be merged as part of this automation. :red_circle:{% endif %}
 
 
       :no_entry: There were **no changes** to commit.
 
 
-      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number }}]({{ gitlab_job_url }}){% endif %}
+      {% if gitlab_job_number is defined %}- :link: Gitlab Job [{{ gitlab_job_number | default('') }}]({{ gitlab_job_url | default('') }}){% endif %}
 
-      {{ merge_request_approval_comment }}
+      {{ merge_request_approval_comment | default('') }}
 
       /spend {{ task_duration_ansible }}s
       {% endraw %}
@@ -552,9 +606,32 @@
     return_content: true
     headers:
       PRIVATE-TOKEN: "{{ api_token }}"
-  when: merge_request_id|default('not found') != 'not found' and auto_merge
+  when: >
+    merge_request_id|default('not found') != 'not found'
+      and 
+    auto_merge
+      and 
+    (
+      (
+        merge_request_user_can_approve|default(true)|bool
+          and
+        merge_request_needs_approval|default(0)|int == 1
+          and
+        merge_request_approval_require_password|bool
+      )
+        or
+      merge_request_needs_approval|default(0)|int == 0
+        or
+      merge_request_approved|default(false)|bool
+    )
   register: merge_the_merge_request
   no_log: true
+
+
+- name: DEBUG - Merge the Merge Request return
+  ansible.builtin.debug:
+    msg: "{{ merge_the_merge_request.json | default('') | from_yaml }}"
+  when: merge_request_id|default('not found') != 'not found' and auto_merge
 
 
 - name: generate comment for unable to merge
@@ -563,44 +640,63 @@
       {% raw %}
       I'm unabe to merge!!
       
-      When I tried '{{ merge_the_merge_request.json.message }}' was returned
+      When I tried '{{ merge_the_merge_request.json.message | default('') }}' was returned
 
       <details>
       <summary>Debug Information</summary>
 
       Existing MR
       ```json
-      {{ merge_request_existing | to_nice_json }}
+      {{ merge_request_existing | default('') | to_nice_json }}
       ```
 
       Create Merge Request
       ```json
-      {{ merge_request_create | to_nice_json }}
+      {{ merge_request_create | default('') | to_nice_json }}
       ```
       - *push changes if any*
       - *Pause for 20 Seconds*
 
       Fetch merge request
       ```json
-      {{ merge_request_fetch | to_nice_json }}
+      {{ merge_request_fetch | default('') | to_nice_json }}
       ```
 
       Fetch Approvals
       ```json
-      {{ merge_request_approvals_fetch | to_nice_json }}
+      {{ merge_request_approvals_fetch | default('') | to_nice_json }}
       ```
 
       Approve MR
       ```json
-      {{ merge_request_approvals_approve | to_nice_json }}
+      {{ merge_request_approvals_approve | default('') | to_nice_json }}
       ```
 
       sub module details:
       ```json
-      {{ playconfig | to_nice_json }}
+      {{ playconfig | default('') | to_nice_json }}
 
       ```
 
+      Git Status, prior to `git add` and `git commit`
+      ``` text
+      {{ git_status_commit_prior.stdout | default ('') }}
+      ```
+
+      Merge the Merge Request return:
+      ``` json
+      {{ merge_the_merge_request.json | default('') }}
+      ```
+
+      other facts:
+      ```json
+      "ansible_facts": {
+        "merge_request_approval_require_password": {{ merge_request_approval_require_password | default('') }},
+        "merge_request_approved": {{ merge_request_approved | default('') }},
+        "merge_request_needs_approval": {{ merge_request_needs_approval | default('') }},
+        "merge_request_user_can_approve": {{ merge_request_user_can_approve | default('') }}
+      }
+      ```
       </details>
       
       /spend 10s
@@ -620,9 +716,15 @@
       body: "{{ merge_fail_comment }}"
   when: >
     merge_request_id|default('not found') != 'not found' and auto_merge|bool and 
-    merge_the_merge_request.status|int > 400
+    merge_the_merge_request.status|default(0)|int > 400
   register: merge_request_comment
   no_log: true
+
+
+- name: DEBUG - Failed Merge Request Comment
+  ansible.builtin.debug:
+    msg: "{{ merge_request_comment.json | from_yaml }}"
+  when: merge_request_comment.json|default('') != ''
 
 
 - ansible.builtin.debug:
