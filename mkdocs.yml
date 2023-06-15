@@ -23,6 +23,10 @@ nav:
 
       - projects/git_configuration/index.md
 
+      - projects/git_configuration/gitlab.md
+
+      - projects/git_configuration/github.md
+
       - projects/git_configuration/submodule.md
 
 - Operations: 

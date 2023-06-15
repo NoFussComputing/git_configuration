@@ -1,3 +1,61 @@
+## 0.4.0rc2 (2023-06-07)
+
+### Bug Fixes
+
+- **submlodule**: [e0e7a4af](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/e0e7a4af8b3915e2bc233617e7f230a7d6f177df) - commit changes state changed when changed [ [!76](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/76) [#17](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/17) ]
+- **submlodule**: [a04e509e](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/a04e509eccbd055571ef3cc6e3d4cfd2d4699602) - on new branch init submodule [ [!76](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/76) [#17](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/17) ]
+- **submlodule**: [b9a43416](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/b9a434165dfa56ade41f10c792ac24cfad469413) - only update for update step [ [!76](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/76) [#17](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/17) ]
+- **submlodule**: [b2e36b34](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/b2e36b34e3482d374f37caf48e64223824656ab7) - existing branch init submodule [ [!76](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/76) [#17](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/17) ]
+- **submodule**: [ea7447ee](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/ea7447eec3ebb89c87083490e36334668d77b166) - use module path, not name [ [!75](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/75) ]
+- **submodule**: [4757090b](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/4757090b74c337901e9511b0d0fca20d3751807a) - use correct var for checking approal user [ [!74](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/74) ]
+
+### Documentaton / Guides
+
+- **submlodule**: [852df76f](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/852df76f9e46c5d7bef0916fa201c78654ad9e5f) - updated intro blurb [ [!76](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/76) [#17](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/17) ]
+- [523d7e02](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/523d7e025fa9ed1e0d697f22c88cb9273cc11673) - title/description metadata update [ [!10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/10) [#10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/10) ]
+- **home**: [4248880f](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/4248880f00868ccd93bfa5abd0fb7f267ee6dd3a) - added features and expanded intro [ [!10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/10) [#10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/10) ]
+- **gitlab**: [3068c708](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/3068c708ea3df730ac8672ffc08a3cb806efcb0a) - added intro [ [!10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/10) [#10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/10) ]
+- **github**: [6c25196a](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/6c25196ae3d90cadb1611fb1fceb2c14f1950960) - initial github page [ [!10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/10) [#10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/10) ]
+- **placeholders**: [1380d176](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/1380d1762e947b91a7b1c7c4374fe6488b1a186d) - add external place holders for links [ [!10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/10) [#10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/10) ]
+- **index**: [bd18dc7a](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/bd18dc7a71a3021333e5cd27ec0547d9cf218eff) - added tips pointing to role and ee repo [ [#10](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/10) ]
+
+## 0.4.0rc1 (2023-06-05)
+
+### Bug Fixes
+
+- **gitlab**: [d5ba76e9](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/d5ba76e9ffad43a6a423fdfe356f277ad0f6ee16) - correct creation path variable expansion [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) ]
+- **submodule**: [0da3f29a](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/0da3f29a9f318201cb4e2f1862b43305113a2e79) - use .gitmodules to fetch path [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) ]
+- **submodule**: [31a00693](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/31a006936f2a25c918356e96180d2000b5ac2000) - look for approvers in the correct location [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) [!15](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/15) ]
+
+### Features
+
+- **submodule**: [5dfe8444](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/5dfe84443955248e425d68963bd0185a99e568d2) - oadjust MR title to reflect specified module name [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) ]
+- **submodule**: [e294e27d](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/e294e27d10526418c2794eb5fea8cc3a79f94818) - output failed mr comment api call [ [!67](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/67) ]
+
+## 0.4.0rc0 (2023-06-03)
+
+### Bug Fixes
+
+- **submodule**: [94d4d449](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/94d4d449c77dd9cdd18773413ab1991691b54db6) - correct failed var in specified module [ [!66](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/66) ]
+- **submodule**: [a32e168c](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/a32e168cdae093fe2301bc64e6e452b3f9318bff) - dont shallow clone [ [!66](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/66) ]
+- **submodule**: [0339db37](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/0339db37d33654b67d52138e7c06ed3aadebbf2d) - dont shallow clone [ [!63](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/63) ]
+- **submodule**: [6fb0dab5](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/6fb0dab5d957fae56fa19d9c6c13ae6cbaed6b8c) - use correct var in when clause [ [!63](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/63) ]
+- **submodule**: [2bdbb303](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/2bdbb303fba037cd7890bf8bf6ddeaec33bfba63) - ensure var expansion for specified correct [ [!62](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/62) [!48](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/48) ]
+- **submodule**: [0439bb65](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/0439bb65085ffcffa5800d26b832d866b34e43b7) - ensure existing mr changed [ [!60](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/60) [#16](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/16) ]
+- **ci**: [e118e7ee](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/e118e7eec301a16684e0f539d8ada88bf2b9f916) - ensure unit test doesn't run on git tag [ [!55](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/55) [#15](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/15) ]
+
+### Code Refactor
+
+- **submodule**: [a41793b0](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/a41793b0e0d3ed2f55f65280f90d16dfd101691b) - use strong typing for vars [ [!62](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/62) [!48](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/48) ]
+- **submodule**: [05fa3c26](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/05fa3c263503855e12857169c691a7e1934aa3dd) - mr comment non-reqd vars set to empty [ [!62](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/62) [!48](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/48) ]
+
+### Features
+
+- **submodule**: [de2576f7](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/de2576f7c4261f6a934ef2243cde623c85869c8a) - enable specifying module name to update [ [!60](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/60) [#16](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/16) ]
+- **ci**: [5825b40b](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/5825b40bf3fa7a682ede6c2978982904989809ab) - update ansible-role git submodules [ [!55](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/55) [#6](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/6) ]
+- **gitlab**: [29279f72](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/29279f72665c3d428df4bc873fbcadea5f9c5b9c) - ability to configure pages [ [!55](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/55) [#6](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/6) ]
+- **gitlab**: [6d46f6fa](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/6d46f6fa9a267ebb66e2a094c18bd3607e29ada0) - path derived from name in lowercase no spaces [ [!55](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/55) [#7](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/7) ]
+
 ## 0.3.0 (2023-05-31)
 
 ### Bug Fixes
