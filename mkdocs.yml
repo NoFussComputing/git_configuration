@@ -27,6 +27,8 @@ nav:
 
         - projects/git_configuration/gitlab/issues.md
 
+        - projects/git_configuration/gitlab/issues_patches.md
+
         - projects/git_configuration/gitlab/notes.md
 
         - projects/git_configuration/gitlab/projects.md
