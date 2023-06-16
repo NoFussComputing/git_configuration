@@ -1,0 +1,58 @@
+---
+
+- name: Fetch Gitlab issues
+  ansible.builtin.include_tasks:
+    file: gitlab/issues.yaml
+    apply:
+      tags: 
+        - gitlab_issues_fetch
+
+
+- name: Fetch Project details
+  ansible.builtin.include_tasks:
+    file: gitlab/projects.yaml
+    apply:
+      tags: 
+        - gitlab_project_fetch
+
+
+- name: Fetch Gitlab notes
+  ansible.builtin.include_tasks:
+    file: gitlab/notes.yaml
+    apply:
+      tags: 
+        - gitlab_issues_notes_fetch
+  vars:
+     issue_iid: "{{ task_item.iid }}"
+  loop: "{{ gitlab_issues_existing | from_yaml }}"
+  loop_control:
+    loop_var: task_item
+
+
+- name: Only Keep Notes with patch files
+  ansible.builtin.set_fact:
+    gitlab_issues_notes_patches: "{{ gitlab_issues_notes_patches + [ item ] }}"
+  with_items: "{{ gitlab_issue_notes_existing }}"
+  when: >
+    not item.system|default(false)|bool
+      and
+    item.body is search('.*\\[\\d+-.*?\\.patch\\).*\\n\\n.*')
+  no_log: true # Don't log data manipulation
+
+
+- name: Setup fact for patch files
+  set_fact:
+    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files | default([]) + [{'note_id': item.id, 'project_id': item.project_id, 'issue_iid': item.noteable_iid, 'filename': item.body | regex_search('(?<=\\[)(.*?)(?=\\])'), 'url': gitlab_project_url+''+item.body | regex_search('(?<=\\]\\()(\\/uploads\\/[^\\/]+\\/[^)]+\\.patch)(?=\\))')}] }}"
+  loop: "{{ gitlab_issues_notes_patches }}"
+  no_log: true # Don't log data manipulation
+
+
+# ToDo: enable limiting to using patches from specified users or possibly checking if the user is >=developer
+
+
+- name: Clean facts no longer required
+  ansible.builtin.set_fact:
+    gitlab_issues_existing: []
+    gitlab_issue_notes_existing: []
+    gitlab_issues_notes_patches: []
+    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files | from_yaml }}"
