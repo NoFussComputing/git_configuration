@@ -29,6 +29,8 @@ nav:
 
         - projects/git_configuration/gitlab/notes.md
 
+        - projects/git_configuration/gitlab/projects.md
+
         - projects/git_configuration/gitlab_labels.md
 
       - projects/git_configuration/github.md
