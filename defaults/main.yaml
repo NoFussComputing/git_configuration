@@ -5,3 +5,8 @@ temp_repo_creation_directory: /tmp/ansible/repo
 gitlab_server_url: https://gitlab.com
 group_labels: []
 project_labels: []
+
+
+gitlab_issues_notes_patches: []
+gitlab_issue_patch_files: []
+gitlab_issue_notes_existing: []
