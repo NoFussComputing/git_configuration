@@ -1,0 +1,36 @@
+---
+
+- name: build URL
+  ansible.builtin.set_fact:
+    gitlab_issue_url: |
+      {{ gitlab_server_url }}/api/v4/projects/{{ project_path | replace( '/', '%2F') }}/issues?{% if issue_iid is defined %}
+      id={{ issue_iid }}
+      {% else %}
+      state=opened&scope=all{% endif %}
+  when: project_path is defined
+  no_log: true # Don't log data manipulation
+
+
+- name: Find Existing Issue
+  ansible.builtin.uri:
+    url: "{{ gitlab_issue_url }}"
+    method: GET
+    body_format: json
+    status_code: [200,201]
+    return_content: true
+    headers:
+      PRIVATE-TOKEN: "{{ gitlab_api_token }}"
+  register: gitlab_issues_fetch
+  no_log: true
+  when: project_path is defined
+  tags: 
+    - gitlab
+    - gitlab_issues
+    - gitlab_issues_fetch
+
+
+- name: Fact gitlab_issues_fetch clean
+  ansible.builtin.set_fact:
+    gitlab_issues_existing: "{{ gitlab_issues_fetch.json | default('') | from_yaml }}"
+  when: gitlab_issues_fetch.json | default('') | length | int > 0
+  no_log: true # Don't log data manipulation
