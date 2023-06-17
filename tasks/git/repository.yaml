@@ -97,3 +97,46 @@
 
   when: task_git_user_set | default(false) | bool
 
+
+- block:
+
+
+  - name: check remote for existing branch {{ git_branch_name }}
+    ansible.builtin.command:
+      chdir: "{{ repo_root }}"
+      cmd: bash -c 'if [ "0$(git ls-remote origin {{ git_branch_name }})" == "0" ]; then exit 0; else exit 1; fi'
+    register: git_branch_existing
+    failed_when: git_branch_existing.rc | int > 1
+    changed_when: git_branch_existing.rc | int == 1
+    when: >
+      git_branch_name != ''
+    tags:
+      - git
+      - git_branch
+      - git_branch_create
+      - git_branch_create_existing
+      - git_branch_existing
+
+
+  - name: Create git branch {{ git_branch_name }}
+    ansible.builtin.command:
+      cmd: "git checkout -b {{ git_branch_name }} {{ default_branch }}"
+      chdir: "{{ repo_root }}"
+    register: git_branch_create
+    failed_when: git_branch_create.rc > 0
+    changed_when: "'never' == 'changes'"
+    no_log: true
+    when: >
+      git_branch_name != ''
+        and
+      default_branch is defined
+        and
+      not git_branch_existing.changed|bool
+    tags:
+      - git
+      - git_branch
+      - git_branch_create
+
+
+  when: task_git_branch_create | default(false) | bool
+
