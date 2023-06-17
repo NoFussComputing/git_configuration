@@ -9,7 +9,7 @@
     headers:
       PRIVATE-TOKEN: "{{ gitlab_api_token }}"
   register: gitlab_project_fetch
-  no_log: true
+  no_log: true # api_token and cookie visible
   when: project_path is defined
   tags: 
     - gitlab
