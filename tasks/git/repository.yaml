@@ -59,3 +59,41 @@
 
   when: task_git_clone_branch_default | default(false) | bool
 
+
+- block:
+
+
+  - name: Set Git User details
+    ansible.builtin.command:
+      cmd: git config user.email "{{ git_user_email | default('this-email-@doesnt.need.to.be.valid.com') }}"
+      chdir: "{{ repo_root }}"
+    register: git_user_set_email
+    when: repo_root is defined
+    failed_when: git_user_set_email.rc | int != 0
+    changed_when: "'never' == 'changes'"
+    no_log: true
+    tags: 
+      - git
+      - git_user
+      - git_user_set
+      - git_user_set_email
+
+
+  - name: Set Git User details
+    ansible.builtin.command:
+      cmd: git config user.name "{{ git_user_name | default('a random name not depending on valid value') }}"
+      chdir: "{{ repo_root }}"
+    register: git_user_set_name
+    when: repo_root is defined
+    failed_when: git_user_set_name.rc | int != 0
+    changed_when: "'never' == 'changes'"
+    no_log: true
+    tags: 
+      - git
+      - git_user
+      - git_user_set
+      - git_user_set_name
+
+
+  when: task_git_user_set | default(false) | bool
+
