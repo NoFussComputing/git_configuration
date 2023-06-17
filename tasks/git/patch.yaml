@@ -1,0 +1,44 @@
+---
+
+- block:
+
+  - name: remove any existing patch file
+    ansible.builtin.file:
+      path: "/tmp/{{ git_patch_filename }}"
+      #mode: directory
+      state: absent
+    changed_when: "'never' == 'changed'"
+    no_log: true # not required
+    when: >
+      patch_url_download is defined
+        and
+      git_patch_filename  != ''
+    tags: 
+      - git
+      - git_patch
+      - git_patch_download
+
+
+  - name: Download Patch
+    ansible.builtin.uri:
+      url: "{{ patch_url_download }}"
+      method: GET
+      #body_format: json
+      status_code: [200]
+      #return_content: true
+      headers:
+        PRIVATE-TOKEN: "{{ gitlab_api_token }}"
+      dest: "/tmp/{{ git_patch_filename }}"
+    register: git_patch_download
+    no_log: true # api_token and cookie visible
+    when: >
+      patch_url_download is defined
+        and
+      git_patch_filename != ''
+    tags: 
+      - git
+      - git_patch
+      - git_patch_download
+
+  when: task_git_patch_download | default(false) | bool
+
