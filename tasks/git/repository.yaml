@@ -164,3 +164,34 @@
       or
     task_git_branch_push | default(false) | bool
 
+
+- block:
+
+
+  - name: Push git branch {{ git_branch_name }}
+    ansible.builtin.command:
+      cmd: "git push origin {{ git_branch_name }}"
+      chdir: "{{ repo_root }}"
+    register: git_branch_push
+    failed_when: git_branch_push.rc > 0
+    changed_when: "'never' == 'changes'"
+    #no_log: true
+    when: >
+      git_branch_name != ''
+        and
+      git_branch_exist.stdout == git_branch_name
+    tags:
+      - git
+      - git_branch
+      - git_branch_push
+
+
+  when: task_git_branch_push | default(false) | bool
+
+
+- name: Clear task variables
+  ansible.builtin.set_fact:
+    task_git_clone_branch_default: false
+    task_git_user_set: false
+    task_git_branch_create: false
+    git_branch_name: ''
