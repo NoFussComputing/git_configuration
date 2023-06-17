@@ -28,3 +28,26 @@
   ansible.builtin.import_tasks: submodule_update.yaml
   tags:
     - submodule
+
+- name: Update gitlab group labels
+  ansible.builtin.include_tasks: gitlab/labels.yaml
+  vars:
+    group_labels: "{{ task_item.labels }}"
+    group_path: "{{ task_item.path }}"
+    gitlab_api_token: "{{ role_git_conf.gitlab.api_token_owner }}"
+  loop_control:
+    loop_var: task_item
+  when: task_item.labels | length | int > 0
+  loop: "{{ role_git_conf.gitlab.groups | from_yaml }}"
+
+
+- name: Update gitlab project labels
+  ansible.builtin.include_tasks: gitlab/labels.yaml
+  vars:
+    project_labels: "{{ task_item.labels }}"
+    project_path: "{{ task_item.group }}/{{ task_item.name | lower | replace(' ', '_') }}"
+    gitlab_api_token: "{{ role_git_conf.gitlab.api_token_owner }}"
+  loop_control:
+    loop_var: task_item
+  when: task_item.labels | length | int > 0
+  loop: "{{ role_git_conf.gitlab.projects | from_yaml }}"
