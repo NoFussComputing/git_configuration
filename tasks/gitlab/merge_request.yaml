@@ -29,7 +29,7 @@
 
   - name: Create Merge Request for {{ source_branch }}
     ansible.builtin.uri:
-      url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?source_branch={{ source_branch }}&target_branch={{ default_branch }}&&allow_collaboration=true&&title={{ gitlab_merge_request_title | urlencode  }}&description={{ gitlab_merge_request_description | urlencode }}"
+      url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?source_branch={{ source_branch }}&target_branch={{ default_branch }}&&allow_collaboration=true&&title={{ gitlab_merge_request_title | urlencode  }}&description={{ gitlab_merge_request_description | urlencode }}&remove_source_branch={{ merge_request_remove_remove_source_branch | default(true) }}"
       method: POST
       body_format: json
       status_code: [200,201]

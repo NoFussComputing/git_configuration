@@ -1,5 +1,5 @@
 temp_repo_creation_directory: /tmp/ansible/repo
-
+default_branch: development
 
 # Gitlab: labels
 gitlab_server_url: https://gitlab.com
@@ -10,3 +10,10 @@ project_labels: []
 gitlab_issues_notes_patches: []
 gitlab_issue_patch_files: []
 gitlab_issue_notes_existing: []
+gitlab_issues_related_merge_requests: []
+
+gitlab_merge_request_title: ''
+gitlab_merge_request_description: ''
+merge_requests: []
+merge_request_assign_user: "@nfc_bot" # must include '@' in front of names and space seperate multiple users
+merge_request_labels: '~"code review::not started"'
