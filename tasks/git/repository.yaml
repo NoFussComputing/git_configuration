@@ -140,3 +140,27 @@
 
   when: task_git_branch_create | default(false) | bool
 
+- block:
+
+  - name: Ensure branch exists
+    ansible.builtin.command:
+      cmd: "git branch --show-current"
+      chdir: "{{ repo_root }}"
+    register: git_branch_exist
+    failed_when: git_branch_exist.rc > 1
+    changed_when: "'never' == 'changes'"
+    #no_log: true
+    when: >
+      git_branch_name != ''
+    tags:
+      - git
+      - git_branch
+      - git_branch_push
+      - git_branch_exist
+
+
+  when: >
+    task_git_branch_exist | default(false) | bool
+      or
+    task_git_branch_push | default(false) | bool
+
