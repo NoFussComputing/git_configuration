@@ -1,0 +1,61 @@
+---
+
+- name: Facts - Task Variables
+  ansible.builtin.set_fact:
+    repo_root: "{{ temp_repo_creation_directory }}/cloned-repo"
+
+
+- block:
+
+  - name: clean
+    ansible.builtin.file:
+      path: "{{ repo_root }}"
+      mode: directory
+      state: absent
+    changed_when: "'never' == 'changed'"
+    no_log: true # not required
+    when: >
+      gitlab_api_token is defined
+        and
+      project_path is defined
+    tags:
+      - git
+      - git_clone
+      - git_clone_branch_default
+
+
+  - name: Clone Repository to default branch
+    ansible.builtin.command:
+      cmd: "git clone -b {{ default_branch }} https://gitlab-ci-token:{{ gitlab_api_token }}@gitlab.com/{{ project_path }}.git {{ repo_root }}"
+    register: git_clone_branch_default
+    failed_when: git_clone_branch_default.rc > 0
+    changed_when: "'never' == 'changes'"
+    no_log: true
+    when: >
+      gitlab_api_token is defined
+        and
+      project_path is defined
+    tags:
+      - git
+      - git_clone
+      - git_clone_branch_default
+
+
+  - name: Update git submodules init default branch
+    ansible.builtin.shell: >
+      cd {{ repo_root }};
+      git fetch --all;
+      git submodule update --init;
+      git submodule foreach git submodule update --init;
+    register: git_clone_branch_default_submodule_init
+    failed_when: git_clone_branch_default_submodule_init.rc|int > 0
+    changed_when: "'never' == 'changes'"
+    tags:
+      - git
+      - git_clone
+      - git_clone_branch_default
+      - git_clone_branch_default_submodule_init
+
+
+  when: task_git_clone_branch_default | default(false) | bool
+
