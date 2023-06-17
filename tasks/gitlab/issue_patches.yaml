@@ -57,15 +57,55 @@
 
 - name: Setup fact for patch files
   set_fact:
-    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files | default([]) + [{'note_id': item.id, 'project_id': item.project_id, 'issue_iid': item.noteable_iid, 'filename': item.body | regex_search('(?<=\\[)(.*?)(?=\\])'), 'url': gitlab_project_url+''+item.body | regex_search('(?<=\\]\\()(\\/uploads\\/[^\\/]+\\/[^)]+\\.patch)(?=\\))')}] }}"
+    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files | default([]) + [{'author': item.author | from_yaml, 'noteable_id': item.noteable_id, 'note_id': item.id, 'note_markdown': item.body, 'project_id': item.project_id, 'issue_iid': item.noteable_iid, 'branch_name': item.body | regex_search('(?<=\\[)(.*?)(?=\\])') | replace('.patch', ''), 'filename': item.body | regex_search('(?<=\\[)(.*?)(?=\\])'), 'markdown_url': item.body | regex_search('(?<=\\]\\()(\\/uploads\\/[^\\/]+\\/[^)]+\\.patch)(?=\\))'), 'url': gitlab_project_url+''+item.body | regex_search('(?<=\\]\\()(\\/uploads\\/[^\\/]+\\/[^)]+\\.patch)(?=\\))')}] }}"
   loop: "{{ gitlab_issues_notes_patches }}"
   no_log: true # Don't log data manipulation
+
+
+
+
+
+- ansible.builtin.debug:
+    msg: "{{ gitlab_issue_patch_files }}"
+
+# This code should not be required, as the patch gets removed from the issu comment.
+# leaving for time being.
+# - name: filter patches with a merge request
+#   ansible.builtin.shell: |
+#     cat <<EOF
+
+#     {% set ns = namespace(hasMergeRequest='false') %}
+
+#     {%- for patch in gitlab_issue_patch_files %}
+
+#       {%- set ns.hasMergeRequest='false' %}
+
+#       {%- for merge_request in gitlab_issues_related_merge_requests %}
+
+#         {%- if merge_request.source_branch == patch.branch_name %}
+#           {%- set ns.hasMergeRequest='true' %}
+#         {%- endif %}
+
+#       {%- endfor %}
+
+#       {%- if ns.hasMergeRequest == 'false' %}
+#       - {{ patch }}
+#       {% endif %}
+
+#     {%- endfor %}
+
+#     EOF
+#   args:
+#     executable: bash
+#   register: gitlab_issue_patch_files
+#   changed_when: false
+#   #no_log: true # Don't log data manipulation
 
 
 # ToDo: enable limiting to using patches from specified users or possibly checking if the user is >=developer
 
 
-- name: Clean facts no longer required
+- name: Task Final facts
   ansible.builtin.set_fact:
     gitlab_issues_existing: []
     gitlab_issue_notes_existing: []
