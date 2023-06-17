@@ -60,6 +60,32 @@
   when: task_gitlab_issues_discussion_reply | default(false) | bool
 
 
+- block:
+
+
+  - name: Add a Comment to Gitlab Issue {{ issue_iid }}
+    ansible.builtin.uri:
+      url: "{{ gitlab_server_url }}/api/v4/projects/{{ project_path | replace('/', '%2F') }}/issues/{{ issue_iid }}/notes?body={{ note_body | urlencode }}"
+      method: POST
+      body_format: json
+      status_code: [200,201]
+      return_content: true
+      headers:
+        PRIVATE-TOKEN: "{{ gitlab_api_token }}"
+    register: gitlab_issues_note_create
+    #no_log: true # api_token and cookie visible
+    when: >
+      project_path is defined
+    tags:
+      - gitlab
+      - gitlab_issues
+      - gitlab_issues_notes
+      - gitlab_issues_note_create
+
+
+  when: task_gitlab_issues_note_create | default(false) | bool
+
+
 - name: Clear task variables
   ansible.builtin.set_fact:
     task_gitlab_issues_notes_fetch: false
