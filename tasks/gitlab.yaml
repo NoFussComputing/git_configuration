@@ -34,7 +34,7 @@
   delegate_to: localhost
   register: gitlab_repository
   with_subelements:
-    - "{{ role_git_conf.gitlab }}"
+    - "{{ role_git_conf.gitlab.repositories }}"
     - projects
   no_log: true
   tags:
