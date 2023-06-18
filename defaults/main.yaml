@@ -17,3 +17,6 @@ gitlab_merge_request_description: ''
 merge_requests: []
 merge_request_assign_user: "@nfc_bot" # must include '@' in front of names and space seperate multiple users
 merge_request_labels: '~"code review::not started"'
+
+# See https://docs.gitlab.com/ee/api/members.html#roles for role levels
+patch_file_minimum_access_level: 30 # No access (0), Minimal access (5) (Introduced in GitLab 13.5.), Guest (10), Reporter (20), Developer (30), Maintainer (40), Owner (50).
