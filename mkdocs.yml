@@ -27,7 +27,7 @@ nav:
 
         - projects/git_configuration/git.md
 
-        - Automations:
+        #- Automations:
 
         - Task files:
 
@@ -57,8 +57,6 @@ nav:
 
           - projects/git_configuration/gitlab/notes.md
 
-          - projects/git_configuration/git/patch.md
-
           - projects/git_configuration/gitlab/projects.md
 
           - projects/git_configuration/gitlab/labels.md
@@ -67,9 +65,9 @@ nav:
 
         - projects/git_configuration/github.md
 
-        - Automations:
+        #- Automations:
 
-        - Task Files:
+        #- Task Files:
 
 - Operations: 
 
