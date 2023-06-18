@@ -108,7 +108,7 @@
       tags:
         - always
   vars:
-    gitlab_merge_request_create: true
+    task_gitlab_merge_request_create: true
     gitlab_merge_request_title: "{{ 'chore(automated): apply patch ' + task_item.filename + ' from issue' }}"
     gitlab_merge_request_description: |
       ## :notepad_spiral: Summary
