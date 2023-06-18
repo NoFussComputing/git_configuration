@@ -62,6 +62,12 @@
       - gitlab_issues_notes
       - gitlab_issues_discussion_reply
 
+
+  - name: Pause for 5 seconds for gitlab to catchup
+    ansible.builtin.pause:
+      seconds: 5
+
+
   - name: Display Reply to gitlab Discussion
     ansible.builtin.debug:
       msg: "{{ gitlab_issues_discussion_reply.json | from_yaml }}"
@@ -92,6 +98,11 @@
       - gitlab_issues
       - gitlab_issues_notes
       - gitlab_issues_note_create
+
+
+  - name: Pause for 5 seconds for gitlab to catchup
+    ansible.builtin.pause:
+      seconds: 5
 
 
   - name: Display created Gitlab note
@@ -126,6 +137,11 @@
       - gitlab_issues_note_create
 
 
+  - name: Pause for 5 seconds for gitlab to catchup
+    ansible.builtin.pause:
+      seconds: 5
+
+
   - name: Display edited Gitlab note
     ansible.builtin.debug:
       msg: "{{ gitlab_issues_note_edit.json | from_yaml }}"
@@ -151,6 +167,11 @@
         body: "{{ merge_request_comment }}"
     register: gitlab_merge_request_notes_create
     no_log: true # api_token and cookie visible
+
+
+  - name: Pause for 5 seconds for gitlab to catchup
+    ansible.builtin.pause:
+      seconds: 5
 
 
   - name: Display Merge Request comment
