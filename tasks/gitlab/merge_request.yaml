@@ -55,7 +55,7 @@
 
   - ansible.builtin.set_fact:
       merge_requests: "{{ merge_requests + [ gitlab_merge_request_create.json | from_yaml ]}}"
-    when: gitlab_merge_request_create.json|default('') != ''
+    when: gitlab_merge_request_create.json | default('') | length | int > 0
     no_log: true # not required
 
 
@@ -64,11 +64,11 @@
       msg: "{{ merge_requests }}"
 
 
-  when: gitlab_merge_request_create | default(false) | bool
+  when: task_gitlab_merge_request_create | default(false) | bool
 
 
 - name: Clear task variables
   ansible.builtin.set_fact:
-    gitlab_merge_request_create: false
+    task_gitlab_merge_request_create: false
     gitlab_merge_request_title: ''
     gitlab_merge_request_description: ''
