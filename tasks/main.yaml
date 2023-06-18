@@ -54,6 +54,9 @@
 
 
 - block:
+    # Minimum required variables for this automation are:
+    #  - `gitlab_api_token `defaults to 'role_git_conf.gitlab.api_token' unless within gitlab CD/CI environment.
+    #  - `project_path` must be specified within gitlab CD/CI environment
 
 
   - name: Create Merge Request(s) from git patches found gitlab issue comment(s)

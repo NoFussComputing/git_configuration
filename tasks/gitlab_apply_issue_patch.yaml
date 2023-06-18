@@ -6,6 +6,30 @@
     task_start_epoch: "{{ ansible_date_time.epoch }}"
 
 
+- name: Gitlab CI Detection
+  ansible.builtin.set_fact:
+    project_path: "{{ lookup('env', 'CI_PROJECT_PATH') }}"
+    gitlab_api_token:  "{{ lookup('env', 'GIT_COMMIT_TOKEN') }}"
+    repo_root: "{{ lookup('env', 'CI_PROJECT_DIR') }}"
+    gitlab_job_number: "{{ lookup('env', 'CI_JOB_ID') }}"
+    gitlab_job_url: "{{ lookup('env', 'CI_JOB_URL') }}"
+  when: lookup('env', 'CI') | default(false) | bool
+  no_log: true
+
+
+- name: Gitlab include repository config file
+  ansible.builtin.include_vars: "{{ repo_root }}/.nfc_automation.yaml"
+  when: lookup('env', 'CI') | default(false)
+
+
+- name: Gitlab CI config Expansion to cover required variables
+  ansible.builtin.set_fact:
+    temp_repo_creation_directory: "{{ repo_root }}"
+    default_branch: "{{ role_git_conf.gitlab.default_branch | default(omit) }}"
+    merge_request_labels: "{{ role_git_conf.gitlab.merge_request.patch_labels | default(omit) }}"
+  when: lookup('env', 'CI') | default(false) | bool
+
+
 - name: Fetch Gitlab issues with patch
   ansible.builtin.include_tasks:
     file: gitlab/issue_patches.yaml
@@ -107,6 +131,8 @@
       - patch file [{{ task_item.filename }}]({{ task_item.markdown_url }})
 
       - Issue Note: https://gitlab.com/{{ project_path }}/-/issues/{{ task_item.issue_iid }}#note_{{ task_item.note_id }}
+
+      {% if lookup('env', 'CI') | default(false) | bool -%} - Automation Job Pipeline: [Job {{ gitlab_job_number }}]({{ gitlab_job_url }}) {%- endif %}
 
 
       ### :construction: Tasks
