@@ -1,1 +1,7 @@
 temp_repo_creation_directory: /tmp/ansible/repo
+
+
+# Gitlab: labels
+gitlab_server_url: https://gitlab.com
+group_labels: []
+project_labels: []
