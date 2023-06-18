@@ -42,6 +42,12 @@
     no_log: true # Don't log data manipulation
 
 
+  - name: Display found Gitlab Issues
+    ansible.builtin.debug:
+      msg: "{{ gitlab_issues_fetch.json | from_yaml }}"
+    when: gitlab_issues_fetch.json | default('') | length | int > 0
+
+
   when: task_gitlab_issues_fetch | default(false) | bool
 
 
@@ -68,6 +74,13 @@
 
   - ansible.builtin.set_fact:
       gitlab_issues_related_merge_requests: "{{ gitlab_issues_related_merge_requests + gitlab_issues_related_merge_request.json }}"
+    when: gitlab_issues_related_merge_request.json | default('') | length | int > 0
+    no_log: true # Don't log data manipulation
+
+
+  - name: Display found Gitlab Issue related Merge Request
+    ansible.builtin.debug:
+      msg: "{{ gitlab_issues_related_merge_request.json | from_yaml }}"
     when: gitlab_issues_related_merge_request.json | default('') | length | int > 0
 
 

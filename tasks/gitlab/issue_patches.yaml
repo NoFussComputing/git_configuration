@@ -28,6 +28,7 @@
      issue_iid: "{{ task_item.iid }}"
      task_gitlab_issues_notes_fetch: true
   loop: "{{ gitlab_issues_existing | from_yaml }}"
+  no_log: true # not required
   loop_control:
     loop_var: task_item
 
@@ -36,11 +37,16 @@
   ansible.builtin.set_fact:
     gitlab_issues_notes_patches: "{{ gitlab_issues_notes_patches + [ item ] }}"
   with_items: "{{ gitlab_issue_notes_existing | from_yaml }}"
+  no_log: true # not required
   when: >
     not item.system|default(false)|bool
       and
     item.body is search('.*\\[\\d+-.*?\\.patch\\).*\\n\\n.*')
 
+
+- name: Display Notes found with patch files
+  ansible.builtin.debug:
+    msg: "{{ gitlab_issues_notes_patches }}"
 
 
 - name: Fetch Gitlab issue Related Merge Requests
@@ -53,6 +59,7 @@
     task_gitlab_issues_related_merge_request: true
     issue_iid: "{{ item.noteable_iid }}"
   loop: "{{ gitlab_issues_notes_patches }}"
+  no_log: true # not required
 
 
 - name: Setup fact for patch files
@@ -110,4 +117,3 @@
     gitlab_issues_existing: []
     gitlab_issue_notes_existing: []
     gitlab_issues_notes_patches: []
-    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files | from_yaml }}"
