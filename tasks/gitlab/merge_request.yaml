@@ -25,6 +25,7 @@
   - ansible.builtin.set_fact:
       merge_requests: "{{ merge_requests + [ gitlab_merge_request_existing.json | from_yaml ]}}"
     when: gitlab_merge_request_existing.json|default('') != ''
+    no_log: true # not required
 
 
   - name: Create Merge Request for {{ source_branch }}
@@ -55,6 +56,12 @@
   - ansible.builtin.set_fact:
       merge_requests: "{{ merge_requests + [ gitlab_merge_request_create.json | from_yaml ]}}"
     when: gitlab_merge_request_create.json|default('') != ''
+    no_log: true # not required
+
+
+  - name: display Merge Request
+    ansible.builtin.debug:
+      msg: "{{ merge_requests }}"
 
 
   when: gitlab_merge_request_create | default(false) | bool

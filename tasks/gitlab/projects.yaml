@@ -23,3 +23,9 @@
     gitlab_project_url: "{{ gitlab_project_fetch.json.web_url }}"
   when: gitlab_project_fetch.json | default('') | length | int > 0
   no_log: true # Don't log data manipulation
+
+
+- name: Display found Gitlab Project
+  ansible.builtin.debug:
+    msg: "{{ gitlab_existing_project }}"
+  when: gitlab_project_fetch.json | default('') | length | int > 0
