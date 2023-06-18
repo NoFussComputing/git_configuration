@@ -4,6 +4,7 @@
     # how long it takes for a human to delete a ci/cd job
     task_duration_human: 900
     task_start_epoch: "{{ ansible_date_time.epoch }}"
+    repo_root: "{{ temp_repo_creation_directory }}/cloned-repo"
 
 
 - name: Gitlab CI Detection
