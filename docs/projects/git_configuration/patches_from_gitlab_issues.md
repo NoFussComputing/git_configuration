@@ -6,10 +6,6 @@ template: project.html
 about: https://gitlab.com/nofusscomputing/projects/ansible/git_configuration
 ---
 
-Certainly! Here's the complete documentation for the provided Ansible task file, including a usage section:
-
----
-
 This task file is used to create merge requests in GitLab based on the patches found in GitLab issue comments. It includes a block with minimum required variables and an `include_tasks` task to execute the `gitlab_apply_issue_patch.yaml` playbook. The `gitlab_api_token` variable is defined using the value from `role_git_conf.gitlab.api_token`. The task is tagged with `always` to ensure it is always executed.
 
 
@@ -508,19 +504,3 @@ To use this automation, follow these steps:
             gitlab_api_token: The GitLab API token used for authentication. 
             project_path: the gitlab project path
    ```
-
-
-
-
-
-
-
-
-
-
-
-
-
----
-
-This documentation outlines the tasks involved in the provided Ansible playbook. Each task has a name, description, module used, arguments, conditionals (if any), and tags (if any). It provides a clear understanding of the purpose and flow of the playbook, allowing for easier troubleshooting and modifications.

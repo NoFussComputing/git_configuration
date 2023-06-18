@@ -5,12 +5,11 @@
     # only search for the oldest 10 issue, sorted by updated at desc.
     # this enables the task to run over and over again, to pickup the oldest first, which wont be one with an MR.
     gitlab_issue_url: |
-      {{ gitlab_server_url }}/api/v4/projects/{{ project_path | replace( '/', '%2F') }}/issues?{% if issue_iid is defined %}
-      id={{ issue_iid }}
-      {% endif %}
-      state=opened&?per_page=10&page=1&order_by=updated_at&sort=desc
+      {{ gitlab_server_url }}/api/v4/projects/{{ project_path | replace( '/', '%2F') }}/issues?{% if issue_iid is defined -%}
+      id={{ issue_iid }}{%- endif -%}state=opened&?per_page=10&page=1&order_by=updated_at&sort=desc
+
   when: project_path is defined
-  no_log: true # Don't log data manipulation
+  #no_log: true # Don't log data manipulation
 
 
 - block:

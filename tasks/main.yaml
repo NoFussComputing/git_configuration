@@ -65,8 +65,8 @@
       apply: 
         tags:
           - always
-    vars:
-      gitlab_api_token: "{{ role_git_conf.gitlab.api_token }}"
+    #vars:
+    #  gitlab_api_token: "{{ role_git_conf.gitlab.api_token }}"
     #  project_path: "nofusscomputing/projects/ansible/git_configuration"
     tags: 
      - always
