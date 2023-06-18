@@ -70,9 +70,63 @@
 
 
 
+- name: Fetch Gitlab project Membership
+  ansible.builtin.include_tasks:
+    file: gitlab/members.yaml
+    apply:
+      tags: 
+        - always
+  vars:
+    task_gitlab_members_fetch_all: true
+  loop: "{{ gitlab_issues_notes_patches }}"
+  no_log: true # not required
 
 
-- ansible.builtin.debug:
+- name: Add gitlab author membership for project {{ project_path }}
+  ansible.builtin.shell:
+    cmd: |
+      cat << EOF
+
+      [
+        {% for item in gitlab_issue_patch_files | list -%}
+
+          {
+            "author": {{ item.author | from_yaml }},
+            "branch_name": "{{ item.branch_name }}",
+            "filename": "{{ item.filename }}",
+            "issue_iid": "{{ item.issue_iid }}",
+            "markdown_url": "{{ item.markdown_url }}",
+            "note_id": "{{ item.note_id }}",
+            "note_markdown": "{{ item.note_markdown }}",
+            "noteable_id": "{{ item.noteable_id }}",
+            "project_id": "{{ item.project_id }}",
+            "url": "{{ item.url }}",
+            {% for member in gitlab_members_fetch_all -%}
+              {%- if member.username == item.author.username -%}
+                "author_project_membership": "{{ member.access_level }}",
+              {%- endif -%}
+            {%- endfor %}
+          },
+        {%- endfor %}
+      ]
+
+      EOF
+  args:
+    executable: bash
+  register: gitlab_issue_patch_files_add_author_project_membership
+  changed_when: false
+  no_log: true # Don't log data manipulation
+
+
+- name: Clean variables
+  ansible.builtin.set_fact:
+    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files_add_author_project_membership.stdout | from_yaml }}"
+    gitlab_members_fetch_all: '' # no longer required
+  no_log: true # not required
+
+
+- name: Display patch file Metadata with Project Membership
+  ansible.builtin.debug:
     msg: "{{ gitlab_issue_patch_files }}"
 
 # This code should not be required, as the patch gets removed from the issu comment.
