@@ -1,0 +1,93 @@
+---
+
+- name: build URL
+  ansible.builtin.set_fact:
+    # only search for the oldest 10 issue, sorted by updated at desc.
+    # this enables the task to run over and over again, to pickup the oldest first, which wont be one with an MR.
+    gitlab_issue_url: |
+      {{ gitlab_server_url }}/api/v4/projects/{{ project_path | replace( '/', '%2F') }}/issues?{% if issue_iid is defined %}
+      id={{ issue_iid }}
+      {% endif %}
+      state=opened&?per_page=10&page=1&order_by=updated_at&sort=desc
+  when: project_path is defined
+  no_log: true # Don't log data manipulation
+
+
+- block:
+
+
+  - name: Fetch Existing Issue
+    ansible.builtin.uri:
+      url: "{{ gitlab_issue_url }}"
+      method: GET
+      body_format: json
+      status_code: [200,201]
+      return_content: true
+      headers:
+        PRIVATE-TOKEN: "{{ gitlab_api_token }}"
+    register: gitlab_issues_fetch
+    no_log: true # api_token and cookie visible
+    when: project_path is defined
+    tags: 
+      - gitlab
+      - gitlab_issues
+      - gitlab_issues_fetch
+
+
+
+  - name: Fact gitlab_issues_fetch clean
+    ansible.builtin.set_fact:
+      gitlab_issues_existing: "{{ gitlab_issues_fetch.json | default('') | from_yaml }}"
+    when: gitlab_issues_fetch.json | default('') | length | int > 0
+    no_log: true # Don't log data manipulation
+
+
+  - name: Display found Gitlab Issues
+    ansible.builtin.debug:
+      msg: "{{ gitlab_issues_fetch.json | from_yaml }}"
+    when: gitlab_issues_fetch.json | default('') | length | int > 0
+
+
+  when: task_gitlab_issues_fetch | default(false) | bool
+
+
+- block:
+
+
+  - name: Fetch Issue Related Merge Requests
+    ansible.builtin.uri:
+      url: "{{ gitlab_server_url }}/api/v4/projects/{{ project_path | replace( '/', '%2F') }}/issues/{{ issue_iid }}/related_merge_requests"
+      method: GET
+      body_format: json
+      status_code: [200,201]
+      return_content: true
+      headers:
+        PRIVATE-TOKEN: "{{ gitlab_api_token }}"
+    register: gitlab_issues_related_merge_request
+    no_log: true # api_token and cookie visible
+    when: project_path is defined
+    tags: 
+      - gitlab
+      - gitlab_issues
+      - gitlab_issues_related_merge_request
+
+
+  - ansible.builtin.set_fact:
+      gitlab_issues_related_merge_requests: "{{ gitlab_issues_related_merge_requests + gitlab_issues_related_merge_request.json }}"
+    when: gitlab_issues_related_merge_request.json | default('') | length | int > 0
+    no_log: true # Don't log data manipulation
+
+
+  - name: Display found Gitlab Issue related Merge Request
+    ansible.builtin.debug:
+      msg: "{{ gitlab_issues_related_merge_request.json | from_yaml }}"
+    when: gitlab_issues_related_merge_request.json | default('') | length | int > 0
+
+
+  when: task_gitlab_issues_related_merge_request | default(false) | bool
+
+
+- name: Clear task variables
+  ansible.builtin.set_fact:
+    task_gitlab_issues_fetch: false
+    task_gitlab_issues_related_merge_request: false

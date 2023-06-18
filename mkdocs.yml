@@ -23,13 +23,53 @@ nav:
 
       - projects/git_configuration/index.md
 
-      - projects/git_configuration/gitlab.md
+      - Git:
 
-      - projects/git_configuration/gitlab_labels.md
+        - projects/git_configuration/git.md
 
-      - projects/git_configuration/github.md
+        - Automations:
 
-      - projects/git_configuration/submodule.md
+        - Task files:
+
+          - projects/git_configuration/git/patch.md
+
+          - projects/git_configuration/git/repository.md
+      
+      - Gitlab:
+
+        - projects/git_configuration/gitlab.md
+
+        - Automations:
+
+          - projects/git_configuration/patches_from_gitlab_issues.md
+
+          - projects/git_configuration/submodule.md
+
+        - Task files:
+
+          - projects/git_configuration/gitlab/issues.md
+
+          - projects/git_configuration/gitlab/issues_patches.md
+
+          - projects/git_configuration/gitlab/members.md
+
+          - projects/git_configuration/gitlab/merge_request.md
+
+          - projects/git_configuration/gitlab/notes.md
+
+          - projects/git_configuration/git/patch.md
+
+          - projects/git_configuration/gitlab/projects.md
+
+          - projects/git_configuration/gitlab/labels.md
+
+      - Github:
+
+        - projects/git_configuration/github.md
+
+        - Automations:
+
+        - Task Files:
 
 - Operations: 
 
