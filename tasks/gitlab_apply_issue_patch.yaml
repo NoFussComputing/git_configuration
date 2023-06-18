@@ -166,9 +166,9 @@
       cat << EOF
 
       [
-        {% set ns = namespace(MergeRequest='') %}
+        {% set ns = namespace(MergeRequest='') -%}
 
-        {% for item in gitlab_issue_patch_files | list %}
+        {%- for item in gitlab_issue_patch_files | list %}
           {%- for merge_request in gitlab_issues_related_merge_requests -%}
 
             {%- if merge_request.source_branch == item.branch_name -%}
@@ -206,6 +206,11 @@
 - name: clean task update patch file metadata
   ansible.builtin.set_fact:
     gitlab_issue_patch_files: "{{ gitlab_issue_patch_files_add_mr.stdout | from_yaml }}"
+
+
+- name: Current patch file metadata
+  ansible.builtin.debug:
+    msg: "{{ gitlab_issue_patch_files }}"
 
 
 - name: Apply Patches Found

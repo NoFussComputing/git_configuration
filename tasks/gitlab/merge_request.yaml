@@ -24,7 +24,7 @@
 
   - ansible.builtin.set_fact:
       merge_requests: "{{ merge_requests + [ gitlab_merge_request_existing.json | from_yaml ]}}"
-    when: gitlab_merge_request_existing.json|default('') != ''
+    when: gitlab_merge_request_existing.json | default('') | length | int > 0
     no_log: true # not required
 
 
@@ -52,6 +52,10 @@
       - gitlab_merge_request
       - gitlab_merge_request_create
 
+
+  - name: Pause for 5 seconds for gitlab to catchup
+    ansible.builtin.pause:
+      seconds: 5
 
   - ansible.builtin.set_fact:
       merge_requests: "{{ merge_requests + [ gitlab_merge_request_create.json | from_yaml ]}}"
