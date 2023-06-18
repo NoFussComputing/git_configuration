@@ -71,6 +71,89 @@
     loop_var: task_item
 
 
+- name: Check if the patch is appilable
+  ansible.builtin.shell:
+    cmd: |
+      cat << EOF
+
+      [
+
+        {%- for item in gitlab_issue_patch_files | list %}
+
+          {% if item.author_project_membership | int >= patch_file_minimum_access_level | int -%}
+          {
+            "author": {{ item.author | from_yaml }},
+            "branch_name": "{{ item.branch_name }}",
+            "filename": "{{ item.filename }}",
+            "issue_iid": "{{ item.issue_iid }}",
+            "markdown_url": "{{ item.markdown_url }}",
+            "note_id": "{{ item.note_id }}",
+            "note_markdown": "{{ item.note_markdown }}",
+            "noteable_id": "{{ item.noteable_id }}",
+            "project_id": "{{ item.project_id }}",
+            "url": "{{ item.url }}",
+            "author_project_membership": "{{ item.author_project_membership | int }}",
+            "test_apply_error": "$(cd {{ repo_root }}; git apply --check /tmp/{{ item.filename }} 1>&1 2>/dev/null; echo -n $?)"
+          },
+          {%- endif -%}
+        {%- endfor %}
+
+      ]
+
+      EOF
+  args:
+    executable: bash
+  register: gitlab_issue_patch_files_patch_applicable
+  changed_when: false
+  #no_log: true # Don't log data manipulation
+
+
+- name: clean task applicable patch file metadata
+  ansible.builtin.set_fact:
+    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files_patch_applicable.stdout | from_yaml }}"
+
+
+- name: Remove patch files that are not applicable
+  ansible.builtin.shell:
+    cmd: |
+      cat << EOF
+
+      [
+
+        {%- for item in gitlab_issue_patch_files | list %}
+
+          {% if item.test_apply_error | int == 0 -%}
+          {
+            "author": {{ item.author | from_yaml }},
+            "branch_name": "{{ item.branch_name }}",
+            "filename": "{{ item.filename }}",
+            "issue_iid": "{{ item.issue_iid }}",
+            "markdown_url": "{{ item.markdown_url }}",
+            "note_id": "{{ item.note_id }}",
+            "note_markdown": "{{ item.note_markdown }}",
+            "noteable_id": "{{ item.noteable_id }}",
+            "project_id": "{{ item.project_id }}",
+            "url": "{{ item.url }}",
+            "author_project_membership": "{{ item.author_project_membership | int }}",
+          },
+          {%- endif -%}
+        {%- endfor %}
+
+      ]
+
+      EOF
+  args:
+    executable: bash
+  register: gitlab_issue_patch_files_patch_clean
+  changed_when: false
+  #no_log: true # Don't log data manipulation
+
+
+- name: Update remaining patch files, non-applicable removed
+  ansible.builtin.set_fact:
+    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files_patch_clean.stdout | from_yaml }}"
+
+
 - name: create the patch branch - {{ task_item.branch_name }}
   ansible.builtin.include_tasks:
     file: git/repository.yaml
