@@ -142,11 +142,11 @@
 
 - block:
 
-  - name: Ensure branch exists
+  - name: Show current branch, expecting {{ git_branch_name }}
     ansible.builtin.command:
       cmd: "git branch --show-current"
       chdir: "{{ repo_root }}"
-    register: git_branch_exist
+    register: git_branch_current
     failed_when: git_branch_exist.rc > 1
     changed_when: "'never' == 'changes'"
     #no_log: true
@@ -156,11 +156,11 @@
       - git
       - git_branch
       - git_branch_push
-      - git_branch_exist
+      - git_branch_current
 
 
   when: >
-    task_git_branch_exist | default(false) | bool
+    task_git_branch_current | default(false) | bool
       or
     task_git_branch_push | default(false) | bool
 
@@ -179,7 +179,7 @@
     when: >
       git_branch_name != ''
         and
-      git_branch_exist.stdout == git_branch_name
+      git_branch_current.stdout == git_branch_name
     tags:
       - git
       - git_branch
