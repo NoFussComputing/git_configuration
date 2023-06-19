@@ -1,0 +1,113 @@
+---
+
+- block:
+
+  - name: remove any existing patch file
+    ansible.builtin.file:
+      path: "/tmp/{{ git_patch_filename }}"
+      #mode: directory
+      state: absent
+    changed_when: "'never' == 'changed'"
+    no_log: true # not required
+    when: >
+      patch_url_download is defined
+        and
+      git_patch_filename  != ''
+    tags: 
+      - git
+      - git_patch
+      - git_patch_download
+
+
+  - name: Download Patch
+    ansible.builtin.uri:
+      url: "{{ patch_url_download }}"
+      method: GET
+      #body_format: json
+      status_code: [200]
+      #return_content: true
+      headers:
+        PRIVATE-TOKEN: "{{ gitlab_api_token }}"
+      dest: "/tmp/{{ git_patch_filename }}"
+    register: git_patch_download
+    no_log: true # api_token and cookie visible
+    when: >
+      patch_url_download is defined
+        and
+      git_patch_filename != ''
+    tags: 
+      - git
+      - git_patch
+      - git_patch_download
+
+  when: task_git_patch_download | default(false) | bool
+
+
+- block:
+
+
+  - name: Switch to branch {{ git_branch_name }}
+    ansible.builtin.command:
+      cmd: "git switch {{ git_branch_name }}"
+      chdir: "{{ repo_root }}"
+    register: git_patch_apply_branch_switch
+    failed_when: git_patch_apply_branch_switch.rc | int > 0
+    changed_when: "'never' == 'changes'"
+    #no_log: true
+    when: >
+      git_patch_filename != ''
+        and
+      git_branch_name != ''
+    tags:
+      - git
+      - git_patch
+      - git_patch_apply
+
+# git apply --check /tmp/18-gitlab-labels.patch == 1 if not needed
+  - name: Check if Patch {{ git_patch_filename }} required
+    ansible.builtin.command:
+      cmd: "git apply --check /tmp/{{ git_patch_filename }}"
+      chdir: "{{ repo_root }}"
+    register: git_patch_apply_applicable
+    failed_when: git_patch_apply_applicable.rc | int > 1
+    changed_when: git_patch_apply_applicable.rc | int == 0
+    #no_log: true
+    when: >
+      git_patch_filename != ''
+        and
+      git_branch_name != ''
+    tags:
+      - git
+      - git_patch
+      - git_patch_apply
+
+
+  - name: Apply Patch {{ git_patch_filename }}
+    ansible.builtin.command:
+      cmd: "git am /tmp/{{ git_patch_filename }}"
+      chdir: "{{ repo_root }}"
+    register: git_patch_apply
+    failed_when: git_patch_apply.rc | int > 0 
+    changed_when: "'Applying:' in git_patch_apply.stdout"
+    #no_log: true
+    when: >
+      git_patch_apply_applicable.rc | int == 0
+        and
+      git_patch_filename != ''
+        and
+      git_branch_name != ''
+    tags:
+      - git
+      - git_patch
+      - git_patch_apply
+
+
+  when: task_git_patch_apply | default(false) | bool
+
+
+- name: Clear task variables
+  ansible.builtin.set_fact:
+    task_git_patch_download: false
+    task_git_patch_apply: false
+    git_patch_filename: ''
+    git_branch_name: ''
