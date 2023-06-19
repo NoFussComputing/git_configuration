@@ -1,0 +1,78 @@
+---
+- block:
+
+
+  - name: Check for existing Merge Request
+    ansible.builtin.uri:
+      url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?state=opened&source_branch={{ source_branch }}&target_branch={{ default_branch }}"
+      method: GET
+      body_format: json
+      return_content: true
+      headers:
+        PRIVATE-TOKEN: "{{ gitlab_api_token }}"
+    register: gitlab_merge_request_existing
+    failed_when: "'never' == 'fail'"
+    changed_when: gitlab_merge_request_existing.json | length | int > 0
+    when: source_branch is defined
+    no_log: true # api_token and cookie visible
+    tags:
+      - gitlab
+      - gitlab_merge_request
+      - gitlab_merge_request_create
+      - gitlab_merge_request_existing
+
+
+  - ansible.builtin.set_fact:
+      merge_requests: "{{ merge_requests + [ gitlab_merge_request_existing.json | from_yaml ]}}"
+    when: gitlab_merge_request_existing.json | default('') | length | int > 0
+    no_log: true # not required
+
+
+  - name: Create Merge Request for {{ source_branch }}
+    ansible.builtin.uri:
+      url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?source_branch={{ source_branch }}&target_branch={{ default_branch }}&&allow_collaboration=true&&title={{ gitlab_merge_request_title | urlencode  }}&description={{ gitlab_merge_request_description | urlencode }}&remove_source_branch={{ merge_request_remove_remove_source_branch | default(true) }}"
+      method: POST
+      body_format: json
+      status_code: [200,201]
+      return_content: true
+      headers:
+        PRIVATE-TOKEN: "{{ gitlab_api_token }}"
+    register: gitlab_merge_request_create
+    when: >
+      not gitlab_merge_request_existing.changed | bool
+        and 
+      gitlab_merge_request_description != ''
+        and
+      gitlab_merge_request_title != ''
+
+    changed_when: gitlab_merge_request_create.json | length | int > 0 
+    no_log: true  # api_token and cookie visible
+    tags:
+      - gitlab
+      - gitlab_merge_request
+      - gitlab_merge_request_create
+
+
+  - name: Pause for 5 seconds for gitlab to catchup
+    ansible.builtin.pause:
+      seconds: 5
+
+  - ansible.builtin.set_fact:
+      merge_requests: "{{ merge_requests + [ gitlab_merge_request_create.json | from_yaml ]}}"
+    when: gitlab_merge_request_create.json | default('') | length | int > 0
+    no_log: true # not required
+
+
+  - name: display Merge Request
+    ansible.builtin.debug:
+      msg: "{{ merge_requests }}"
+
+
+  when: task_gitlab_merge_request_create | default(false) | bool
+
+
+- name: Clear task variables
+  ansible.builtin.set_fact:
+    task_gitlab_merge_request_create: false
+    gitlab_merge_request_title: ''
+    gitlab_merge_request_description: ''

@@ -1,0 +1,395 @@
+---
+- name: Initial Telemetry facts
+  ansible.builtin.set_fact:
+    # how long it takes for a human to delete a ci/cd job
+    task_duration_human: 900
+    task_start_epoch: "{{ ansible_date_time.epoch }}"
+    repo_root: "{{ temp_repo_creation_directory }}/cloned-repo"
+
+
+- name: Gitlab CI Detection
+  ansible.builtin.set_fact:
+    project_path: "{{ lookup('env', 'CI_PROJECT_PATH') }}"
+    gitlab_api_token:  "{{ lookup('env', 'GIT_COMMIT_TOKEN') }}"
+    repo_root: "{{ lookup('env', 'CI_PROJECT_DIR') }}"
+    gitlab_job_number: "{{ lookup('env', 'CI_JOB_ID') }}"
+    gitlab_job_url: "{{ lookup('env', 'CI_JOB_URL') }}"
+  when: lookup('env', 'CI') | default(false) | bool
+  no_log: true
+
+
+- name: Gitlab include repository config file
+  ansible.builtin.include_vars: "{{ repo_root }}/.nfc_automation.yaml"
+  when: lookup('env', 'CI') | default(false)
+
+
+- name: Gitlab CI config Expansion to cover required variables
+  ansible.builtin.set_fact:
+    temp_repo_creation_directory: "{{ repo_root }}"
+    default_branch: "{{ role_git_conf.gitlab.default_branch | default(omit) }}"
+    merge_request_labels: "{{ role_git_conf.gitlab.merge_request.patch_labels | default(omit) }}"
+  when: lookup('env', 'CI') | default(false) | bool
+
+
+- name: Fetch Gitlab issues with patch
+  ansible.builtin.include_tasks:
+    file: gitlab/issue_patches.yaml
+    apply: 
+      tags: 
+        - always
+
+
+- ansible.builtin.debug:
+    msg: "{{ gitlab_issue_patch_files | list }}"
+
+
+- name: Local Repository Setup default branch - {{ default_branch }}
+  ansible.builtin.include_tasks:
+    file: git/repository.yaml
+    apply: 
+      tags: 
+        - always
+  vars:
+    task_git_clone_branch_default: true
+    task_git_user_set: true
+  when: gitlab_issue_patch_files | default('') | length | int > 0
+
+
+- name: Download All Patches, {{ gitlab_issue_patch_files | length | int }} Found
+  ansible.builtin.include_tasks:
+    file: git/patch.yaml
+    apply: 
+      tags:
+        - always
+  vars:
+    patch_url_download: "{{ task_item.url }}"
+    git_patch_filename: "{{ task_item.filename }}"
+    task_git_patch_download: true
+  loop: "{{ gitlab_issue_patch_files | list }}"
+  when: task_item.author_project_membership | int >= patch_file_minimum_access_level
+  loop_control:
+    loop_var: task_item
+
+
+- name: Check if the patch is appilable
+  ansible.builtin.shell:
+    cmd: |
+      cat << EOF
+
+      [
+
+        {%- for item in gitlab_issue_patch_files | list %}
+
+          {% if item.author_project_membership | int >= patch_file_minimum_access_level | int -%}
+          {
+            "author": {{ item.author | from_yaml }},
+            "branch_name": "{{ item.branch_name }}",
+            "filename": "{{ item.filename }}",
+            "issue_iid": "{{ item.issue_iid }}",
+            "markdown_url": "{{ item.markdown_url }}",
+            "note_id": "{{ item.note_id }}",
+            "note_markdown": "{{ item.note_markdown }}",
+            "noteable_id": "{{ item.noteable_id }}",
+            "project_id": "{{ item.project_id }}",
+            "url": "{{ item.url }}",
+            "author_project_membership": "{{ item.author_project_membership | int }}",
+            "test_apply_error": "$(cd {{ repo_root }}; git apply --check /tmp/{{ item.filename }} 1>&1 2>/dev/null; echo -n $?)"
+          },
+          {%- endif -%}
+        {%- endfor %}
+
+      ]
+
+      EOF
+  args:
+    executable: bash
+  register: gitlab_issue_patch_files_patch_applicable
+  changed_when: false
+  #no_log: true # Don't log data manipulation
+
+
+- name: clean task applicable patch file metadata
+  ansible.builtin.set_fact:
+    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files_patch_applicable.stdout | from_yaml }}"
+
+
+- name: Remove patch files that are not applicable
+  ansible.builtin.shell:
+    cmd: |
+      cat << EOF
+
+      [
+
+        {%- for item in gitlab_issue_patch_files | list %}
+
+          {% if item.test_apply_error | int == 0 -%}
+          {
+            "author": {{ item.author | from_yaml }},
+            "branch_name": "{{ item.branch_name }}",
+            "filename": "{{ item.filename }}",
+            "issue_iid": "{{ item.issue_iid }}",
+            "markdown_url": "{{ item.markdown_url }}",
+            "note_id": "{{ item.note_id }}",
+            "note_markdown": "{{ item.note_markdown }}",
+            "noteable_id": "{{ item.noteable_id }}",
+            "project_id": "{{ item.project_id }}",
+            "url": "{{ item.url }}",
+            "author_project_membership": "{{ item.author_project_membership | int }}",
+          },
+          {%- endif -%}
+        {%- endfor %}
+
+      ]
+
+      EOF
+  args:
+    executable: bash
+  register: gitlab_issue_patch_files_patch_clean
+  changed_when: false
+  #no_log: true # Don't log data manipulation
+
+
+- name: Update remaining patch files, non-applicable removed
+  ansible.builtin.set_fact:
+    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files_patch_clean.stdout | from_yaml }}"
+
+
+- name: create the patch branch - {{ task_item.branch_name }}
+  ansible.builtin.include_tasks:
+    file: git/repository.yaml
+    apply: 
+      tags: 
+        - always
+  vars:
+    git_branch_name: "{{ task_item.branch_name }}"
+    task_git_branch_create: true
+  loop: "{{ gitlab_issue_patch_files | list }}"
+  when: task_item.author_project_membership | int >= patch_file_minimum_access_level
+  loop_control:
+    loop_var: task_item
+
+
+- name: Push the patch branch - {{ task_item.branch_name }}
+  ansible.builtin.include_tasks:
+    file: git/repository.yaml
+    apply: 
+      tags: 
+        - always
+  vars:
+    git_branch_name: "{{ task_item.branch_name }}"
+    task_git_branch_push: true
+  loop: "{{ gitlab_issue_patch_files | list }}"
+  when: task_item.author_project_membership | int >= patch_file_minimum_access_level
+  loop_control:
+    loop_var: task_item
+
+
+- name: Create the Merge Requests
+  ansible.builtin.include_tasks:
+    file: gitlab/merge_request.yaml
+    apply: 
+      tags:
+        - always
+  vars:
+    task_gitlab_merge_request_create: true
+    gitlab_merge_request_title: "{{ 'chore(automated): apply patch ' + task_item.filename + ' from issue' }}"
+    gitlab_merge_request_description: |
+      ## :notepad_spiral: Summary
+
+      This Merge Request is part of an task that is automated with ansible. This Merge Request is being raised to apply a patch from issue {{ task_item.issue_iid }}.
+
+      
+      ### :speech_balloon: Comment containing Patch
+
+      <details><summary>Comment text containing the patch</summary>
+
+      {{ task_item.note_markdown }}
+
+      </details>
+
+
+      ### :link: Links / References
+
+      - Patch gathered from issue #{{ task_item.issue_iid }}
+
+      - patch file [{{ task_item.filename }}]({{ task_item.markdown_url }})
+
+      - Issue Note: https://gitlab.com/{{ project_path }}/-/issues/{{ task_item.issue_iid }}#note_{{ task_item.note_id }}
+
+      {% if lookup('env', 'CI') | default(false) | bool -%} - Automation Job Pipeline: [Job {{ gitlab_job_number }}]({{ gitlab_job_url }}) {%- endif %}
+
+
+      ### :construction: Tasks
+
+      - [ ] Code Review
+
+      - [ ] Confirm that issue #{{ task_item.issue_iid }} is not blocked by another issue.
+      
+          - `ToDo: if issue is blocked by another issue, dont create the MR`
+
+              > This is important as then if multiple patches exist, 'issues blocked by' can be used to show patch apply order
+      
+      For more information please see the [documentation](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration)
+
+      /assign {{ merge_request_assign_user }}
+
+      /copy_metadata #{{ task_item.issue_iid }}
+
+      /label {{ merge_request_labels }}
+    source_branch: "{{ task_item.branch_name }}"
+  loop: "{{ gitlab_issue_patch_files | list }}"
+  when: task_item.author_project_membership | int >= patch_file_minimum_access_level
+  loop_control:
+    loop_var: task_item
+
+
+- name: Filter patch files
+  ansible.builtin.shell:
+    cmd: |
+      cat << EOF
+
+      [
+        {% set ns = namespace(MergeRequest='') -%}
+
+        {%- for item in gitlab_issue_patch_files | list %}
+          {%- for merge_request in gitlab_issues_related_merge_requests -%}
+
+            {%- if merge_request.source_branch == item.branch_name -%}
+              {%- set ns.MergeRequest=merge_request -%}
+            {%- endif -%}
+          {%- if item.author_project_membership | int >= patch_file_minimum_access_level | int -%}
+          {
+            "author": {{ item.author | from_yaml }},
+            "branch_name": "{{ item.branch_name }}",
+            "filename": "{{ item.filename }}",
+            "issue_iid": "{{ item.issue_iid }}",
+            "markdown_url": "{{ item.markdown_url }}",
+            "note_id": "{{ item.note_id }}",
+            "note_markdown": "{{ item.note_markdown }}",
+            "noteable_id": "{{ item.noteable_id }}",
+            "project_id": "{{ item.project_id }}",
+            "url": "{{ item.url }}",
+            "merge_request_id": "{{ ns.MergeRequest.id }}",
+            "merge_request_iid": "{{ ns.MergeRequest.iid }}",
+            "author_project_membership": "{{ item.author_project_membership }}",
+          },
+          {%- endif -%}
+          {%- endfor -%}
+        {%- endfor %}
+      ]
+
+      EOF
+  args:
+    executable: bash
+  register: gitlab_issue_patch_files_add_mr
+  changed_when: false
+  no_log: true # Don't log data manipulation
+
+
+- name: clean task update patch file metadata
+  ansible.builtin.set_fact:
+    gitlab_issue_patch_files: "{{ gitlab_issue_patch_files_add_mr.stdout | from_yaml }}"
+
+
+- name: Current patch file metadata
+  ansible.builtin.debug:
+    msg: "{{ gitlab_issue_patch_files }}"
+
+
+- name: Apply Patches Found
+  ansible.builtin.include_tasks:
+    file: git/patch.yaml
+    apply: 
+      tags:
+        - git_patch_download
+  vars:
+    git_patch_filename: "{{ task_item.filename }}"
+    git_branch_name: "{{ task_item.branch_name }}"
+    task_git_patch_apply: true
+  loop: "{{ gitlab_issue_patch_files | list }}"
+  loop_control:
+    loop_var: task_item
+
+
+- name: Push the changes to the patch branch - {{ task_item.branch_name }}
+  ansible.builtin.include_tasks:
+    file: git/repository.yaml
+    apply: 
+      tags: 
+        - always
+  vars:
+    git_branch_name: "{{ task_item.branch_name }}"
+    task_git_branch_push: true
+  loop: "{{ gitlab_issue_patch_files | list }}"
+  loop_control:
+    loop_var: task_item
+
+
+- name: Reply to patch thread
+  ansible.builtin.include_tasks:
+    file: gitlab/notes.yaml
+    apply: 
+      tags: 
+        - always
+  vars:
+    task_gitlab_issues_note_create: true
+    issue_iid: "{{ task_item.issue_iid }}"
+    note_body: "G'day @{{ task_item.author.username }},\n\nThe patch that you had within your comment will be removed as a Merge Request has been created using your patch, see !{{ task_item.merge_request_iid }}.\n\n/spend 5s"
+  loop: "{{ gitlab_issue_patch_files | list }}"
+  loop_control:
+    loop_var: task_item
+
+
+  # ToDo: label with will be fixed in MR??????
+
+
+- name: Remove the patch from the users comment so it doesn't get picked up anymore
+  ansible.builtin.include_tasks:
+    file: gitlab/notes.yaml
+    apply: 
+      tags: 
+        - always
+  vars:
+    task_gitlab_issues_note_edit: true
+    issue_iid: "{{ task_item.issue_iid }}"
+    note_id: "{{ task_item.note_id }}"
+    note_body: "{{ task_item.note_markdown | replace('[' + task_item.filename + '](' + task_item.markdown_url + ')', task_item.filename ) }}\n\n> automated edit: patched removed as MR has been created, see !{{ task_item.merge_request_iid }}"
+  loop: "{{ gitlab_issue_patch_files | list }}"
+  loop_control:
+    loop_var: task_item
+
+
+- name: Telemetry fact
+  ansible.builtin.set_fact:
+    task_finish_epoch: "{{ now().strftime('%s') }}"
+
+
+- name: Telemetry fact
+  ansible.builtin.set_fact:
+    task_duration_ansible: "{{ task_finish_epoch|int - task_start_epoch|int }}"
+
+
+- name: Final Telemetry facts
+  ansible.builtin.set_fact:
+    task_duration_ansible: "{{ (task_finish_epoch|int - task_start_epoch|int) / gitlab_issue_patch_files | default('') | length | int }}"
+  when: gitlab_issue_patch_files | default('') | length | int > 1
+
+- name: Comment on Merge Request
+  ansible.builtin.include_tasks:
+    file: gitlab/notes.yaml
+    apply: 
+      tags: 
+        - always
+  vars:
+    task_gitlab_merge_request_notes_create: true
+    merge_request_iid: "{{ task_item.merge_request_iid }}"
+    merge_request_comment: "/spend {{ task_duration_ansible }}s"
+  loop: "{{ gitlab_issue_patch_files | list }}"
+  loop_control:
+    loop_var: task_item
+
+
+# ToDo: Task if auto-merge, merge the merge request???
+
+- ansible.builtin.set_fact:
+    merge_requests: []
