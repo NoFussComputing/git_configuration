@@ -1,3 +1,66 @@
+## 0.5.0 (2023-06-19)
+
+### Bug Fixes
+
+- **ci**: [c10ce0a9](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/c10ce0a94704f99a1af2335aacb140a4fb0df2ab) - multiple to get integration testing working [ [!102](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/102) ]
+- **ci**: [48f34f63](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/48f34f63d635aefb9a365066a51fc11d6d2672d2) - added missing file [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) [!112](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/112) ]
+- **gitlab_issue_patch**: [9e8f71f8](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/9e8f71f8c9cafdb22ed1a95d342902be43502670) - pause for 5 seconds for gitlab api [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab_issue_patch**: [df2968e1](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/df2968e1937eba0d8bc04ee4c8ded152235da58e) - corrected task variable run [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **docs**: [aec31ea9](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/aec31ea9dd5e20df4a5975d5377ba7986eac6ee5) - correct the navigation for gitlab
+
+### Code Refactor
+
+- **gitlab_issue_patch**: [581d2601](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/581d2601a72572b92b9d0e69dd3fd55630c0566d) - moved repo_root var global [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab_issue_patch**: [971faac4](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/971faac4cb8ea82632c84c0b9bcd8bfefcc1b2d9) - stopped logging not-required and added task output [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **git**: [b4ff2622](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/b4ff26222ab4edd17e9169bddcbc068b78341760) - renamed task ensure branch exist -> show current [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab_projects**: [f8271d94](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/f8271d948cc6d645eaa973392a26ba43ebb6fd64) - notate why no log [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab_notes**: [20dc8d54](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/20dc8d5432b95db03bce27c9f44c5b87c4be982c) - group related tasks for filtering [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **issue**: [a51184ef](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/a51184efbee85132157d7a55a676aefce38c1742) - group related tasks for filtering [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **issue_patches**: [723b6b11](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/723b6b11d9bec351198b42ad2c4ed313c2b0452e) - adjust logic so it works as intended [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- [9e18e81e](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/9e18e81e41de79d69c930b9821db7b332b37f55d) - adjust the git var [ [#18](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/18) ]
+
+### Continious Integration
+
+- **automation**: [70cd3d5b](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/70cd3d5b9e76f891e64ee7ea3d6a16fe252d730e) - updated config file with mr patch labels [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+
+### Documentaton / Guides
+
+- [6ac26e08](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/6ac26e08b35417754b8949a4edddd28cd0e4bb8f) - countless code review suggested fixes. [ [!112](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/merge_requests/112) ]
+- **gitlab_issue_patches**: [6ee6b221](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/6ee6b221007ab28be8e326b884bd3b2b0ede32ac) - remaining docs for the tasks and automation [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- [4b94495b](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/4b94495bc6471b16db272f6b160e0dee05869354) - update navigation structure [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [bcc0e9fa](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/bcc0e9fab9f8a478b365066fb6b1b650f383cd26) - task file issue patches [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [b67f2311](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/b67f23110f33dfd1fa6c5e9fcf4ba0ab4dd7af36) - task file projects [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [d50740db](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/d50740db83137fb8cae68ed48957bfe8bf9bfe16) - task file notes [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [8e35bf83](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/8e35bf837c886ab6b84a64bac9eb94d84327b61a) - task file issues [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- [803dd4fc](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/803dd4fc8e74a2e88ef70d3400dd9ffa576a234e) - remove wrong wording
+- **gitlab**: [630db299](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/630db2999fdc62045734b62c2c0a384143d6e561) - manage gitlab group/project labels [ [#18](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/18) ]
+
+### Features
+
+- **gitlab_issue_patch**: [7b514d25](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/7b514d25a435615b002f2a28cc27aeaf8c05aaac) - remove patch that failes git apply --check [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab_issue_patches**: [6fdf3f98](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/6fdf3f9871ca76dd2141a0959bb4c8f89dbe86ea) - Added support for running in gitlab CD/CI environment [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **automation**: [b339b9df](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/b339b9dfa8c60d1ab0207eb4a7e60c063057a04a) - add automation for fetching issue patch files and creating a merge request. [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab_issue_patches**: [375959f3](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/375959f3238d8099892a16cc9478e20820dc5481) - Add patch comment user membership to metadata [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [2e1850e8](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/2e1850e8f4e7c9a49b71cb79f038df82506ef568) - fetch project membership, inlcuding inherited [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [e0d5c50d](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/e0d5c50d1475b8419eddc5423f9f96d26e28d6f4) - comment on merge request [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [e6ada4c2](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/e6ada4c25bf67bee15cbd2fca0079a533f02e86a) - edit comment under issue [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [9fbf02c2](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/9fbf02c2beacf4875461494ddb3dbb5efa07c11f) - add comment to issue [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [3a36572c](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/3a36572cebfa291cd487b62f18e764d747b433b0) - reply to discussion [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [3420fde8](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/3420fde8988a8702233464e0f975e3a18528c20d) - ability to fetch issue related MR [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [a2c64ed9](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/a2c64ed9cf063f4d3178c76c5969e063a7de4a96) - Create a Merge Request if one doesn't already exist [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **repository**: [5a742262](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/5a7422627f03768cf5fcaef1997670fb7e50f1e4) - push branch [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **repository**: [c11c046d](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/c11c046d8770db7df13c39d6be7ca024118915ea) - check if local branch exists [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **repository**: [97ceea0f](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/97ceea0f95973fb15552b79ce8893522197c09c7) - create branch if not on remote [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **repository**: [57199547](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/571995475f642b23710d4db8d48ae86caea9f8bc) - set git user details for local repository [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **repository**: [3337f6ce](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/3337f6ce62565d8e7b424f0517a573bd77475260) - Clone a repository [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **patch**: [70421bd0](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/70421bd062455077013a207919fd188cbf8b2d28) - apply a patch file to a local branch [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **patch**: [02f9e899](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/02f9e899a5457e5caae07307f507e18097c2ab3e) - download patch file from url [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [93c06340](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/93c063404d83c7fb245d28eb5824fb41f4bbf6c3) - task file issue patches [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [a8a9c9d7](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/a8a9c9d723b469f17c8467ac3716301052c06658) - task file projects [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [c572d47d](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/c572d47de3c670c155c6fca11f7c5bbfdef3ccc4) - task file notes [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [1cf31f90](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/1cf31f90d67cabc5db1ba75e7ed5e978a38bec60) - task file issues [ [#19](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/19) ]
+- **gitlab**: [5dc13785](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/commit/5dc13785a439266c11b0e2fefe570cecd82a1f5d) - manage gitlab group/project labels [ [#18](https://gitlab.com/nofusscomputing/projects/ansible/git_configuration/-/issues/18) ]
+
 ## 0.4.0 (2023-06-15)
 
 ### Bug Fixes
