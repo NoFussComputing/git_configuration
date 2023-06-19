@@ -16,3 +16,25 @@ Like the [Gitlab Repository](gitlab.md) feature of this ansible role, you can ma
 ## Docs ToDo
 
 - expand
+
+
+## Configuration
+
+``` yaml title="vars.yaml" linenums="1"
+
+role_git_conf:
+
+  github: # Mandatory if you wish to manage Github Configuration
+
+    - api_url: "https://github.com"
+      api_token:                              # Mandatory, Github API Key with organisation/group access as the owner
+      projects:                               # Mandatory, list of repositories to manage
+        - name: ansible_playbooks             # Mandatory, name of repository
+            organization: NoFussComputing     # Mandatory, where the project will be created/located
+            description: ""                   # Optional, default=none
+            private: true                     # Optional, default=true
+            users:                            # Optional, list of users to give access
+              - name: nfc-robot               # Mandatory, Github username for use
+                permission: maintain          # Mandatory, permission level to grant user
+
+```
