@@ -25,11 +25,25 @@ This task is designed to automate the updating of your repositories git submodul
 To run this task use `ansible-playbook {playbook name that uses git_configuration role}.yaml --tags submodule` ensure you set the requird variables with `--extra-args` or define them in your playbook.
 
 
+When this automation is run from within the Gitlab CD/CI environment the following variables are used and automagically gathered from the environmental variables. most are self explanatory, with `CI` (boolean) being used as the variable to detect the Gitlab CD/CI environment:
+
+- `CI_PROJECT_PATH`
+
+- `GIT_COMMIT_TOKEN`
+
+- `CI_PROJECT_DIR`
+
+- `CI_JOB_ID`
+
+- `CI_JOB_URL`
+
+- `CI`
+
 ## Gitlab CI/CD Usage
 
-This task has also been designed to work within the Gitlab CI/CD environment. The task auto detects this. However you must have a configuration file within the root of your repository for this to work. The required variables as listed above, must be specified within the `.yaml` file under the path `role_git_conf.gitlab`
+This task has also been designed to work within the Gitlab CI/CD environment. The task auto detects this. However you must have a configuration file within the root of your repository for this to work. The required variables as listed above, must be specified within the `.yaml` file under the path `role_git_conf.gitlab`. Please refer to the [Gitlab config documentation](gitlab.md#Configuration) for further information.
 
-Example Configuration file
+Example Configuration file. 
 
 ``` yaml title=".nfc_automation.yaml" linenums="1"
 ---
@@ -46,7 +60,6 @@ role_git_conf:
 !!! Notice
     if the config file `.nfc_automation.yaml` does not exist, the job will not run.
 
-!!! Notice
     Not specifying the required variables will cause the job to fail.
 
 !!! tip

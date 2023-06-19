@@ -1,0 +1,193 @@
+---
+
+
+- block:
+
+  - name: clean
+    ansible.builtin.file:
+      path: "{{ repo_root }}"
+      mode: directory
+      state: absent
+    changed_when: "'never' == 'changed'"
+    no_log: true # not required
+    when: >
+      gitlab_api_token is defined
+        and
+      project_path is defined
+    tags:
+      - git
+      - git_clone
+      - git_clone_branch_default
+
+
+  - name: Clone Repository to default branch
+    ansible.builtin.command:
+      cmd: "git clone -b {{ default_branch }} https://gitlab-ci-token:{{ gitlab_api_token }}@gitlab.com/{{ project_path }}.git {{ repo_root }}"
+    register: git_clone_branch_default
+    failed_when: git_clone_branch_default.rc > 0
+    changed_when: "'never' == 'changes'"
+    no_log: true
+    when: >
+      gitlab_api_token is defined
+        and
+      project_path is defined
+    tags:
+      - git
+      - git_clone
+      - git_clone_branch_default
+
+
+  - name: Update git submodules init default branch
+    ansible.builtin.shell: >
+      cd {{ repo_root }};
+      git fetch --all;
+      git submodule update --init;
+      git submodule foreach git submodule update --init;
+    register: git_clone_branch_default_submodule_init
+    failed_when: git_clone_branch_default_submodule_init.rc|int > 0
+    changed_when: "'never' == 'changes'"
+    tags:
+      - git
+      - git_clone
+      - git_clone_branch_default
+      - git_clone_branch_default_submodule_init
+
+
+  when: task_git_clone_branch_default | default(false) | bool
+
+
+- block:
+
+
+  - name: Set Git User details
+    ansible.builtin.command:
+      cmd: git config user.email "{{ git_user_email | default('this-email-@doesnt.need.to.be.valid.com') }}"
+      chdir: "{{ repo_root }}"
+    register: git_user_set_email
+    when: repo_root is defined
+    failed_when: git_user_set_email.rc | int != 0
+    changed_when: "'never' == 'changes'"
+    no_log: true
+    tags: 
+      - git
+      - git_user
+      - git_user_set
+      - git_user_set_email
+
+
+  - name: Set Git User details
+    ansible.builtin.command:
+      cmd: git config user.name "{{ git_user_name | default('a random name not depending on valid value') }}"
+      chdir: "{{ repo_root }}"
+    register: git_user_set_name
+    when: repo_root is defined
+    failed_when: git_user_set_name.rc | int != 0
+    changed_when: "'never' == 'changes'"
+    no_log: true
+    tags: 
+      - git
+      - git_user
+      - git_user_set
+      - git_user_set_name
+
+
+  when: task_git_user_set | default(false) | bool
+
+
+- block:
+
+
+  - name: check remote for existing branch {{ git_branch_name }}
+    ansible.builtin.command:
+      chdir: "{{ repo_root }}"
+      cmd: bash -c 'if [ "0$(git ls-remote origin {{ git_branch_name }})" == "0" ]; then exit 0; else exit 1; fi'
+    register: git_branch_existing
+    failed_when: git_branch_existing.rc | int > 1
+    changed_when: git_branch_existing.rc | int == 1
+    when: >
+      git_branch_name != ''
+    tags:
+      - git
+      - git_branch
+      - git_branch_create
+      - git_branch_create_existing
+      - git_branch_existing
+
+
+  - name: Create git branch {{ git_branch_name }}
+    ansible.builtin.command:
+      cmd: "git checkout -b {{ git_branch_name }} {{ default_branch }}"
+      chdir: "{{ repo_root }}"
+    register: git_branch_create
+    failed_when: git_branch_create.rc > 0
+    changed_when: "'never' == 'changes'"
+    no_log: true
+    when: >
+      git_branch_name != ''
+        and
+      default_branch is defined
+        and
+      not git_branch_existing.changed|bool
+    tags:
+      - git
+      - git_branch
+      - git_branch_create
+
+
+  when: task_git_branch_create | default(false) | bool
+
+- block:
+
+  - name: Show current branch, expecting {{ git_branch_name }}
+    ansible.builtin.command:
+      cmd: "git branch --show-current"
+      chdir: "{{ repo_root }}"
+    register: git_branch_current
+    failed_when: git_branch_current.rc > 1
+    changed_when: "'never' == 'changes'"
+    #no_log: true
+    when: >
+      git_branch_name != ''
+    tags:
+      - git
+      - git_branch
+      - git_branch_push
+      - git_branch_current
+
+
+  when: >
+    task_git_branch_current | default(false) | bool
+      or
+    task_git_branch_push | default(false) | bool
+
+
+- block:
+
+
+  - name: Push git branch {{ git_branch_name }}
+    ansible.builtin.command:
+      cmd: "git push origin {{ git_branch_name }}"
+      chdir: "{{ repo_root }}"
+    register: git_branch_push
+    failed_when: git_branch_push.rc > 0
+    changed_when: "'never' == 'changes'"
+    #no_log: true
+    when: >
+      git_branch_name != ''
+        and
+      git_branch_current.stdout == git_branch_name
+    tags:
+      - git
+      - git_branch
+      - git_branch_push
+
+
+  when: task_git_branch_push | default(false) | bool
+
+
+- name: Clear task variables
+  ansible.builtin.set_fact:
+    task_git_clone_branch_default: false
+    task_git_user_set: false
+    task_git_branch_create: false
+    git_branch_name: ''
