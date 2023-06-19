@@ -6,85 +6,44 @@ template: project.html
 about: https://gitlab.com/nofusscomputing/projects/ansible/git_configuration
 ---
 
-This task file is used to create merge requests in GitLab based on the patches found in GitLab issue comments. It includes a block with minimum required variables and an `include_tasks` task to execute the `gitlab_apply_issue_patch.yaml` playbook. The `gitlab_api_token` variable is defined using the value from `role_git_conf.gitlab.api_token`. The task is tagged with `always` to ensure it is always executed.
+This Automation is used to create merge requests in GitLab based on the patches found in GitLab issue comments. The automation executes `gitlab_apply_issue_patch.yaml` taskfile. This automation also contains the logic to run this within the Gitlab CD/CI environment. For this you will require the automation config file `.nfc_automation.yaml` within the root directory of the repository.
 
 
-## Automation Structure
+## Inventory
 
-This task includes the `gitlab_apply_issue_patch.yaml` playbook using the `ansible.builtin.include_tasks` module. It applies the playbook with the `always` tag. The playbook is responsible for creating merge requests based on the patches found in the GitLab issue comments.
-
-The `gitlab_api_token` variable must be defined as is also required, variable `project_path`.
-
-
-### Tags
-
-This task is tagged with `always` to ensure it is always executed. however, to run the automation you must specify tag `gitlab_issue_patches`
-
-
-### Condition
-
-The task is conditionally executed based on the presence of the `gitlab_issue_patches` tag in the `ansible_run_tags` variable. If the tag is present, the task is executed.
-
-
-### Inventory
-
-The playbook does not require an inventory as it operates on the specified GitLab repository and merge requests.
+The automation does not require an inventory as it operates on the specified GitLab repository and merge requests using the ansible host `localhost`.
 
 
 ## Task file: gitlab_apply_issue_patch.yaml
 
-This task file is used to apply patches to the specified repository and merge requests in GitLab. It includes tasks for downloading patches, applying them, pushing the changes to the patch branch, replying to the patch thread, removing the patch from the user's comment, and updating the merge request description. The playbook also includes tasks for collecting telemetry data and debugging.
-
-The task file collects telemetry data by setting the `task_finish_epoch` and `task_duration_ansible` facts. These facts capture the start and end timestamps of each task's execution, allowing for the calculation of task durations.
+This task file is used to apply patches to the specified repository and merge requests in GitLab. It includes tasks for downloading patches, applying them, pushing the changes to the patch branch, replying to the patch thread, removing the patch from the user's comment, and updating the user by posting a comment to the issue to state why the patch is now non-existant. The automation also includes tasks for collecting telemetry data within ansible facts, which in the future will enable reporting of the time taken and time saved. Facts used for this data are `task_finish_epoch` and `task_duration_ansible`. 
 
 
-### Structure
+### Workflow
 
-The task file consists of the following tasks:
+There are countless steps involved within the task file. However, for simplicity the below detailed workflow is the gist of the automation. The additional tasks that are run as part of this automation exist purely to ensure the conditions are met for the workflow to continue. i.e. ensuring that before applying the patch, that the branch was created, we are on the applicable branch and the patch is applicable, as an example. Of note, this task is designed to run again in the event of failure.
 
-1. **Include Tasks: Download Patch Files**
+1. Search for open Gitlab issues
 
-   This task includes the `gitlab/issues.yaml` task file to download the patch files specified in the `gitlab_issue_patch_files` variable.
+1. from the found issues, fetch all comments and filter to ones that contain an uploaded patch file
 
-2. **Apply Patches Found**
+1. clone repo locally
 
-   This task includes the `git/patch.yaml` task file to apply the patches found.
+1. check if patch applies, if not, workflow stop
 
-3. **Push the changes to the patch branch - {{ task_item.branch_name }}**
+1. if patch applies, create branch and push to remote
 
-   This task includes the `git/repository.yaml` task file to push the changes to the patch branch.
+1. create MR from patch branch to default branch
 
-4. **Reply to patch thread**
+1. apply the patch, and push to remote
 
-   This task includes the `gitlab/notes.yaml` task file to reply to the patch thread.
+1. remove the patch from the users comment
 
-5. **Remove the patch from the user's comment so it doesn't get picked up anymore**
+1. post comment on issue patch comes from, telling the user, that the patch was removed and the reference to the MR.
 
-   This task includes the `gitlab/notes.yaml` task file to remove the patch from the user's comment.
+1. post time taken to the MR
 
-6. **Telemetry fact**
-
-   This task sets the `task_finish_epoch` fact using the `ansible.builtin.set_fact` module.
-
-7. **Final Telemetry facts**
-
-   This task sets the `task_duration_ansible` fact using the `ansible.builtin.set_fact` module.
-
-8. **Comment on Merge Request**
-
-   This task includes the `gitlab/notes.yaml` task file to comment on the merge request.
-
-9. **Update Merge Request**
-
-    This task includes the `gitlab/merge_request.yaml` task file to update the merge request, this includes creating one if it doesn't exist.
-
-10. **Telemetry fact**
-
-    This task sets the `task_finish_epoch` fact using the `ansible.builtin.set_fact` module.
-
-11. **Final Telemetry facts**
-
-    Cleans any variable from the task no longer required.
+1. workflow end.
 
 
 ### Task: Initial Telemetry facts
@@ -458,6 +417,22 @@ The task expects the following variables to be defined:
 
 - `project_path`: The Gitlab project path to run this task on
 
+When running this task as a Gitlab job, the config file `.nfc_automation.yaml` is required. it's layout can be found in the [Gitlab config documentation](gitlab.md#Configuration).
+
+
+When this automation is run from within the Gitlab CD/CI environment the following variables are used and automagically gathered from the environmental variables. most are self explanatory, with `CI` (boolean) being used as the variable to detect the Gitlab CD/CI environment:
+
+- `CI_PROJECT_PATH`
+
+- `GIT_COMMIT_TOKEN`
+
+- `CI_PROJECT_DIR`
+
+- `CI_JOB_ID`
+
+- `CI_JOB_URL`
+
+- `CI`
 
 ## Tags
 
