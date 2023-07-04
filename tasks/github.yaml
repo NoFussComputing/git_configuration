@@ -134,7 +134,7 @@
       {
         "private": {{ item.item.item[1].private | default(true) | bool }},
 
-        "description": "{{ item.item.item[1].description | default('') }}",
+        "description": "{{ item.item.invocation.module_args.description | default('') | trim }}",
 
         {% if item.json|length > 0 %}"default_branch": "{{ item.item.item[1].default_branch | default('development') }}",{% endif %}
 
