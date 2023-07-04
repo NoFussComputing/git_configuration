@@ -13,7 +13,7 @@
     access_token: "{{ item[0].api_token }}"
     organization: "{{ item[1].organization | default(omit) }}"
     name: "{{ item[1].name }}"
-    description: "{{ item[1].description | default('') }}"
+    description: "{{ item[1].description | default('') | replace(\"\n\", ' ') }}"
     private: "{{ item[1].private | default(true) | bool }}"
     state: "{{ item[1].state | default('present') }}"
     force_defaults: "{{ item[1].force_defaults | default(false) | bool }}"
