@@ -12,6 +12,8 @@
     project_path: "{{ lookup('env', 'CI_PROJECT_PATH') }}"
     api_token:  "{{ lookup('env', 'GIT_COMMIT_TOKEN') }}"
     repo_root: "{{ lookup('env', 'CI_PROJECT_DIR') }}"
+    gitlab_git_commit_type: "{{ lookup('env', 'GIT_COMMIT_TYPE') }}"
+    gitlab_git_commit_type_category: "{{ lookup('env', 'GIT_COMMIT_TYPE_CATEGORY') }}"
     gitlab_job_number: "{{ lookup('env', 'CI_JOB_ID') }}"
     gitlab_job_url: "{{ lookup('env', 'CI_JOB_URL') }}"
     gitlab_submodule_name: "{{ lookup('env', 'GIT_CONFIG_SUBMODULE_NAME') | default('') }}"
@@ -375,7 +377,7 @@
   when: item.changed
   register: added_changes
 
-
+# ToDo: #39 add variable for commit type and type catagory i.e. type(type_category): 
 - name: Commit the changes
   ansible.builtin.shell: |
     cd "{{ repo_root }}";
@@ -383,7 +385,14 @@
     export GIT_AUTHOR_EMAIL=helpdesk@nofusscomputing.com;
     export GIT_COMMITTER_NAME=nfc_bot;
     export GIT_COMMITTER_EMAIL=helpdesk@nofusscomputing.com;
-    git commit -m "$(echo 'chore(git): updated submodule {{ item.item.name }}\n\nAutomation Data:\n{{ item.item | to_nice_json }}\n\nChanges: {{ item.stdout }}\n\nMR !{{ merge_request_id }}')";
+    git commit -m "$(echo '{% if gitlab_git_commit_type | default('') != '' -%}
+      {{ gitlab_git_commit_type }}
+    {%- else -%}chore{%- endif -%}(
+    {%- if gitlab_git_commit_type_category | default('') != '' -%}
+      {{ gitlab_git_commit_type_category }}
+    {%- else -%}
+      git
+    {%- endif %}): updated submodule {{ item.item.name }}\n\nAutomation Data:\n{{ item.item | to_nice_json }}\n\nChanges: {{ item.stdout }}\n\nMR !{{ merge_request_id }}')";
   with_items: "{{ update_submodules.results }}"
   when: item.changed
   register: changes_commited
