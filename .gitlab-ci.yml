@@ -14,6 +14,8 @@ variables:
 
 Submodule.Integration.Test:
   extends: .ansible_playbook
+  image: 
+    name: nofusscomputing/ansible-ee:0.7.1
   stage: test
   variables:
     ansible_playbook: 'git_configuration.yaml'
