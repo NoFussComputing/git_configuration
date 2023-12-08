@@ -49,7 +49,7 @@
 
 - name: URL encode mr_title
   ansible.builtin.set_fact:
-    mr_title: "{{ mr_title | urlencode }}"
+    mr_title: "{{ mr_title | string | urlencode }}"
   
 
 - name: Create folder for git clone
@@ -309,7 +309,7 @@
 
 - name: Create Merge Request
   ansible.builtin.uri:
-    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?source_branch={{ automation_branch }}&target_branch={{ default_branch }}&&allow_collaboration=true&&title={{ mr_title }}&description={{ mr_description | urlencode }}"
+    url: "https://gitlab.com/api/v4/projects/{{ project_path | replace('/', '%2F') }}/merge_requests?source_branch={{ automation_branch }}&target_branch={{ default_branch }}&&allow_collaboration=true&&title={{ mr_title }}&description={{ mr_description | string  | urlencode }}"
     method: POST
     body_format: json
     status_code: [200,201]
