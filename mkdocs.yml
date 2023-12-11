@@ -17,57 +17,63 @@ nav:
 
   - projects/index.md
 
-  - Ansible Roles:
+  - Ansible:
 
-    - Git Configuration:
+    - projects/ansible/index.md
+  
+    - Roles:
 
-      - projects/git_configuration/index.md
+      - projects/ansible/roles/index.md
 
-      - Git:
+      - Git Configuration:
 
-        - projects/git_configuration/git.md
+        - projects/ansible/roles/git_configuration/index.md
 
-        #- Automations:
+        - Git:
 
-        - Task files:
+          - projects/ansible/roles/git_configuration/git.md
 
-          - projects/git_configuration/git/patch.md
+          #- Automations:
 
-          - projects/git_configuration/git/repository.md
-      
-      - Gitlab:
+          - Task files:
 
-        - projects/git_configuration/gitlab.md
+            - projects/ansible/roles/git_configuration/git/patch.md
 
-        - Automations:
+            - projects/ansible/roles/git_configuration/git/repository.md
+        
+        - Gitlab:
 
-          - projects/git_configuration/patches_from_gitlab_issues.md
+          - projects/ansible/roles/git_configuration/gitlab.md
 
-          - projects/git_configuration/submodule.md
+          - Automations:
 
-        - Task files:
+            - projects/ansible/roles/git_configuration/patches_from_gitlab_issues.md
 
-          - projects/git_configuration/gitlab/issues.md
+            - projects/ansible/roles/git_configuration/submodule.md
 
-          - projects/git_configuration/gitlab/issues_patches.md
+          - Task files:
 
-          - projects/git_configuration/gitlab/members.md
+            - projects/ansible/roles/git_configuration/gitlab/issues.md
 
-          - projects/git_configuration/gitlab/merge_request.md
+            - projects/ansible/roles/git_configuration/gitlab/issues_patches.md
 
-          - projects/git_configuration/gitlab/notes.md
+            - projects/ansible/roles/git_configuration/gitlab/members.md
 
-          - projects/git_configuration/gitlab/projects.md
+            - projects/ansible/roles/git_configuration/gitlab/merge_request.md
 
-          - projects/git_configuration/gitlab/labels.md
+            - projects/ansible/roles/git_configuration/gitlab/notes.md
 
-      - Github:
+            - projects/ansible/roles/git_configuration/gitlab/projects.md
 
-        - projects/git_configuration/github.md
+            - projects/ansible/roles/git_configuration/gitlab/labels.md
 
-        #- Automations:
+        - Github:
 
-        #- Task Files:
+          - projects/ansible/roles/git_configuration/github.md
+
+          #- Automations:
+
+          #- Task Files:
 
 - Operations: 
 
