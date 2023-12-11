@@ -1,5 +1,2 @@
-# as part of integrating tests a role folder is created
-roles/
-
 # ignore patch files within the repo
 **.patch

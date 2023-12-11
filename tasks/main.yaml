@@ -59,17 +59,27 @@
     #  - `project_path` must be specified within gitlab CD/CI environment
 
 
-  - name: Create Merge Request(s) from git patches found gitlab issue comment(s)
-    ansible.builtin.include_tasks: 
-      file: gitlab_apply_issue_patch.yaml
-      apply: 
-        tags:
-          - always
-    #vars:
-    #  gitlab_api_token: "{{ role_git_conf.gitlab.api_token }}"
-    #  project_path: "nofusscomputing/projects/ansible/git_configuration"
-    tags: 
-     - always
+    - name: Create Merge Request(s) from git patches found gitlab issue comment(s)
+      ansible.builtin.include_tasks:
+        file: gitlab_apply_issue_patch.yaml
+        apply:
+          tags:
+            - always
+      #vars:
+      #  gitlab_api_token: "{{ role_git_conf.gitlab.api_token }}"
+      #  project_path: "nofusscomputing/projects/ansible/git_configuration"
+      tags:
+        - always
 
 
   when: "'gitlab_issue_patches' in ansible_run_tags"
+
+
+- name: Create Artifact with contents of gitlab webhook
+  ansible.builtin.set_stats:
+    data:
+      webhook: "{{ awx_webhook_payload }}"
+    per_host: false
+  tags:
+    - never
+    - gitlab_webhook
