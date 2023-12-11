@@ -63,7 +63,7 @@ role_git_conf:
     Not specifying the required variables will cause the job to fail.
 
 !!! tip
-    Using our [gitlab-ci Project](../gitlab-ci/index.md) will enable you to either have this job automagically available or pre defined for you to create the job.
+    Using our [gitlab-ci Project](../../../gitlab-ci/index.md) will enable you to either have this job automagically available or pre defined for you to create the job.
 
 
 ## Docs ToDo

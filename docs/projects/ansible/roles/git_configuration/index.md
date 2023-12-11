@@ -9,7 +9,7 @@ about: https://gitlab.com/nofusscomputing/projects/ansible/git_configuration
 This Ansible role has been designed to enable you to place git related settings as infrastructure as code. Usage is designed to establish and maintain Gitlab and Github repositories for their lifecycle. Running this role with the required variables, will conduct every task within the role. to filter to either Gitlab or Github, use ansible with `--tags` `gitlab` or `github` respectively. this role, even with the use of tags is designed to run again and again, as if there are no changes, nothing will be changed.
 
 !!! Tip
-    When using our [Ansible Execution Environment Docker Container](../execution_environment/index.md) `nofusscomputing/ansible-ee` this role is included as part of that containers build. This role is also included in our [Ansible Roles](../ansible-roles/index.md) git repository.
+    When using our [Ansible Execution Environment Docker Container](../../execution_environment/index.md) `nofusscomputing/ansible-ee` this role is included as part of that containers build. This role is also included in our [Ansible Roles](../index.md) git repository.
 
 
 ## Features
