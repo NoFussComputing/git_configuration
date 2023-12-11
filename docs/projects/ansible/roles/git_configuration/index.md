@@ -48,6 +48,10 @@ Regardless of the repository type Gitlab/Github, the features are intended to us
 
 - Topics management - *Currently only for Gitlab, Github planned*
 
+- AWX Webhook Artifacts
+
+    > By using tag `gitlab_webhook` from an AWX / Ansible Automation Platform template and setting up the incoming webhook, this will receive the data from the webhook and save it as an artifact for further automations.
+
 
 ## Roadmap
 
