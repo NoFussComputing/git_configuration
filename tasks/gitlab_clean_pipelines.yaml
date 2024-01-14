@@ -3,8 +3,7 @@
   ansible.builtin.set_fact:
     # how long it takes for a human to delete a ci/cd job
     task_duration_human: 30
-    task_start_epoch: "{{ ansible_date_time.epoch }}"
-
+    task_start_epoch: "{{ ('%S' | strftime) | string }}"
 
 - name: Create pipeline data
   ansible.builtin.shell: >
@@ -30,7 +29,7 @@
 
       {% endif %}
 
-      "issue_title": "{{ ansible_date_time.date }} - Pipelines require Cleanup"
+      "issue_title": "{{ ('%Y-%m-%dT%H:%M:%S %z' | strftime) | string }} - Pipelines require Cleanup"
 
     }
 
